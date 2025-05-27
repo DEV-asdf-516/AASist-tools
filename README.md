@@ -1,6 +1,6 @@
 # AASist Tools
 
-**Aasist Tools**는 중소벤처기업부의 *제조데이터 표준 참조모델 활용 기반 조성 사업*의 일환으로 개발된 Python 기반의 참조모델 지원 도구 모음입니다.  
+**AASist Tools**는 중소벤처기업부의 *제조데이터 표준 참조모델 활용 기반 조성 사업*의 일환으로 개발된 Python 기반의 참조모델 지원 도구 모음입니다.  
  AAS(Asset Administration Shell) 표준 참조모델 활용을 위해 다음 두 기능을 별도의 GUI 소프트웨어 형태로 제공합니다:
 
 - **AASist Guidance**는 AAS 참조모델 가이던스 작성 시, 참조모델과 가이던스 서브모델 데이터의 일관성을 확보할 수 있도록 지원하는 도구입니다.
@@ -45,4 +45,4 @@
 
 참조모델 지원 도구 통합 소프트웨어:
 
-- **Aasist One**은 `Aasist Guidance`,`Aasist Test`를 단일 소프트웨어로 통합한 참조모델 지원 도구입니다.
+- **AASist One**은 `AASist Guidance`,`AASist Test`를 단일 소프트웨어로 통합한 참조모델 지원 도구입니다.
