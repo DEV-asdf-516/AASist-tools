@@ -12,42 +12,62 @@ class AasFileFormat(Enum):
     AASX = "aasx"
 
 
-class TableAttributes(Enum):
-    SMC = auto()
-    ID_SHORT = auto()
-    SEMANTIC_ID = auto()
-    DEFINITION = auto()
-    VALUE = auto()
-    VALUE_TYPE = auto()
-    MODEL_TYPE = auto()
-
-
 class ParentElement(Enum):
-    SUBMODEL_ELEMENT_COLLECTION = "submodelElementCollection"
-    ENTITY = "entity"
-    SUBMODEL_ELEMENT_LIST = "submodelElementList"
-    OPERATION = "operation"
-    RELATIONSHIP_ELEMENT = "relationshipElement"
-    BASIC_EVENT_ELEMENT = "basicEventElement"
-    ANNOTATED_RELATIONSHIP_ELEMENT = "annotatedRelationshipElement"
+    SUBMODEL_ELEMENT_COLLECTION = ("submodelElementCollection", "SMC")
+    ENTITY = ("entity", "Ent")
+    SUBMODEL_ELEMENT_LIST = ("submodelElementList", "ElementList")
+    OPERATION = ("operation", "Opr")
+    RELATIONSHIP_ELEMENT = ("relationshipElement", "Rel")
+    BASIC_EVENT_ELEMENT = ("basicEventElement", "Evt")
+    ANNOTATED_RELATIONSHIP_ELEMENT = ("annotatedRelationshipElement", "RelA")
 
     @classmethod
     def contains(cls, value: str) -> bool:
-        return value.lower() in _PARENTS_TYPES
+        value = value.lower()
+        return any(
+            value == full.lower() or value.lower() == short.lower()
+            for full, short in (e.value for e in cls)
+        )
 
 
-_PARENTS_TYPES = {
-    submodel_element_type.value.lower(): submodel_element_type
-    for submodel_element_type in ParentElement
-}
-
-_SIMPLE_MODEL_TYPES = {
-    "property": "Prop",
-    "multiLanguageProperty": "MLP",
-    "submodelElementCollection": "SMC",
-    "submodelElementList": "ElementList",
-    "entity": "ENT",
-    "relationshipElement": "Rel",
-    "file": "File",
-    "range": "Range",
+# Extracted from: package-explorer/src/AasxCsharpLibrary/AasxCompatibilityModels/V20/AdminShell.cs
+SIMPLE_MODEL_TYPES = {
+    "Referable": "Ref",
+    "Reference": "Rfc",
+    "AssetAdministrationShellRef": "AasRef",
+    "AssetRef": "AssetRef",
+    "SubmodelRef": "SMRef",
+    "ConceptDescriptionRef": "CDRef",
+    "DataSpecificationRef": "DSRef",
+    "ContainedElementRef": "CERef",
+    "AssetAdministrationShells": "AASs",
+    "Assets": "Assets",
+    "Submodels": "SMS",
+    "ConceptDescriptions": "CDS",
+    "AdministrationShellEnv": "Env",
+    "AssetAdministrationShell": "AAS",
+    "Asset": "Asset",
+    "View": "View",
+    "ConceptDescription": "CD",
+    "ConceptDictionary": "CDic",
+    "Submodel": "SM",
+    "Qualifier": "Qfr",
+    "OperationVariable": "OprVar",
+    "SubmodelElement": "SME",
+    "DataElement": "DE",
+    "Property": "Prop",
+    "MultiLanguageProperty": "MLP",
+    "Range": "Range",
+    "Blob": "Blob",
+    "File": "File",
+    "ReferenceElement": "Ref",
+    "RelationshipElement": "Rel",
+    "AnnotatedRelationshipElement": "RelA",
+    "Capability": "Cap",
+    "SubmodelElementCollection": "SMC",
+    "Operation": "Opr",
+    "Entity": "Ent",
+    "BasicEvent": "Evt",
+    # etc
+    "SubmodelElementList": "ElementList",
 }

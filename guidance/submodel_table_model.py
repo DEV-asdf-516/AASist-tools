@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import List, Optional
 
 
@@ -9,19 +9,21 @@ class RowModel:
     model_type: Optional[str] = None
     id_short: Optional[str] = None
     _semantic_id: Optional[str] = field(init=False, default=None)
-    _definition: Optional[List[str]] = field(init=False, default=None)
+    _description: Optional[List[str]] = field(init=False, default=None)
     _value: Optional[str] = field(init=False, default=None)
     _value_type: Optional[str] = field(init=False, default=None)
+    _reference_type: Optional[str] = None
+    definition: Optional[str] = None
 
     @property
-    def definition(self) -> Optional[List[str]]:
-        return self._definition
+    def description(self) -> Optional[List[str]]:
+        return self._description
 
-    @definition.setter
-    def definition(self, value: str) -> None:
-        if self._definition is None:
-            self._definition = []
-        self._definition.append(value)
+    @description.setter
+    def description(self, value: str) -> None:
+        if self._description is None:
+            self._description = []
+        self._description.append(value)
 
     @property
     def value(self) -> Optional[str]:
@@ -49,6 +51,15 @@ class RowModel:
             self._semantic_id = value
 
     @property
+    def reference_type(self) -> Optional[str]:
+        return self._reference_type
+
+    @reference_type.setter
+    def reference_type(self, value: str) -> None:
+        if self._reference_type is None:
+            self._reference_type = value
+
+    @property
     def is_empty(self) -> bool:
         return not any(
             [
@@ -57,3 +68,6 @@ class RowModel:
                 self.depth,
             ]
         )
+
+    def to_dict(self) -> dict:
+        return {(k.lstrip("_")): v for k, v in asdict(self).items()}

@@ -120,13 +120,15 @@ class AttiributeOptions(ctk.CTkFrame):
         self.default_options = default_options
         self.attribute_options = [
             ("all_attributes", "All"),
-            ("id_short", "idShort"),
             ("model_type", "메타 모델"),
+            ("id_short", "idShort"),
             ("semantic_id", "Semantic ID"),
             ("depth", "SMC Hierarchy"),
-            ("definition", "설명"),
+            ("definition", "정의"),
+            ("description", "설명"),
             ("value", "Value"),
             ("value_type", "Value Type"),
+            ("reference_type", "참조유형"),
         ]
 
         self.copy_chosen_options: Dict[str, ctk.BooleanVar] = {
@@ -135,12 +137,12 @@ class AttiributeOptions(ctk.CTkFrame):
             if key in {k for k, _ in self.attribute_options}
         }
 
-        for i in range(4):
+        for i in range(3):
             self.grid_columnconfigure(i, weight=1)
 
         for i, (key, label) in enumerate(self.attribute_options):
-            row_pos = i // 4
-            col_pos = i % 4
+            row_pos = i // 3
+            col_pos = i % 3
 
             check_box = ctk.CTkCheckBox(
                 self,
@@ -189,7 +191,7 @@ class SettingOptions(ctk.CTkFrame):
         self.default_options = default_options
         self.setting_options = [
             ("simple_model_type", "메타모델을 약어로 표시"),
-            ("depth_ellipses", "상위 계층 Attribute 생략"),
+            ("depth_ellipses", "계층 구조 간략화"),
         ]
         self.copy_chosen_options: Dict[str, ctk.BooleanVar] = {
             key: ctk.BooleanVar(self, value=value)
@@ -225,7 +227,7 @@ class SettingOptions(ctk.CTkFrame):
             self,
             text=self.setting_options[HIERARCHY_ELLIPSES_INDEX][-1],
             variable=self.copy_chosen_options["depth_ellipses"],
-            command=self._callback(),
+            command=lambda: self._callback(),
             font=ctk.CTkFont(size=16),
             width=16,
             height=16,
@@ -234,7 +236,7 @@ class SettingOptions(ctk.CTkFrame):
         hierarchy_ellipses.grid(row=2, column=0, sticky=ctk.W, padx=12, pady=(8, 0))
         hierarchy_ellipses_desc = ctk.CTkLabel(
             self,
-            text="최하위 계층(예: Property)의 Attribute 정보만 표시합니다",
+            text="계층 트리를 평탄화하여 표시합니다",
             font=ctk.CTkFont(size=14),
             text_color="#9C9C9C",
         )

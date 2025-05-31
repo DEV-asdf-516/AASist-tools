@@ -7,7 +7,7 @@ from guidance.xml.xml_schema_types import _AAS_KEY, XmlTags
 logger = logging.getLogger(__name__)
 
 
-class XmlObject(ParseObject):
+class XmlDataObject(ParseObject):
     def __init__(self, element: etree._Element, level: int = 0):
         super().__init__(
             level=level,
@@ -22,12 +22,18 @@ class XmlObject(ParseObject):
         return f"""{"-" * self.level}> XmlObject(level={self.level}, tag={self.tag}, text={self.text}, parent={self.parent.tag})"""
 
 
+class XmlConceptDescriptionObject:
+    def __init__(self):
+        pass
+
+
 class XmlTableParser(SubmodelTableParser):
 
     def __init__(self, file: IO):
         super().__init__(file=file)
         self.bin: IO = file
-        self._objects: List[XmlObject] = []
+        self._objects: List[XmlDataObject] = []
+        self._definitions: List[XmlConceptDescriptionObject] = []
         self._root_submodels: List[str] = []
 
     def parse_submodels(self, **kwargs: Any):
@@ -40,21 +46,35 @@ class XmlTableParser(SubmodelTableParser):
             logger.error("failed to parse xml")
             return None
 
-        elements: List[XmlObject] = []
+        submodel_elements: List[XmlDataObject] = []
+        concept_description_elements: List[XmlDataObject] = []
 
         aas_submodels = document.find(_AAS_KEY + XmlTags.SUBMODELS.value)
+        concept_descriptions = document.find(
+            _AAS_KEY + XmlTags.CONCEPT_DESCRIPTIONS.value
+        )
+        for cd, level in self._iterate_elements(concept_descriptions, 0):
+            desc_object = self._element_to_object(cd, level)
+            if desc_object is None:
+                continue
+            concept_description_elements.append(desc_object)
+            # TODO 로그찍기
 
         for submodel, level in self._iterate_elements(aas_submodels, 0):
-            xml_object = self._element_to_object(submodel, level)
-            if xml_object is None:
+            data_object = self._element_to_object(submodel, level)
+            if data_object is None:
                 continue
-            elements.append(xml_object)
-            if XmlTags.is_match(
-                xml_object.parent.tag, XmlTags.SUBMODEL
-            ) and XmlTags.is_match(xml_object.tag, XmlTags.ID_SHORT):
-                self._root_submodels.append(xml_object.text)
 
-        self._objects = list(elements)
+            submodel_elements.append(data_object)
+            if XmlTags.is_match(
+                data_object.parent.tag, XmlTags.SUBMODEL
+            ) and XmlTags.is_match(data_object.tag, XmlTags.ID_SHORT):
+                self._root_submodels.append(data_object.text)
+
+        self._objects = list(submodel_elements)
+        self._definitions = list(concept_description_elements)
+        print(len(self._objects), "submodels found")
+        print(len(self._definitions), "concept descriptions found")
 
     def parse_xml(self) -> Optional[etree._Element]:
         parser = etree.XMLParser(
@@ -68,10 +88,10 @@ class XmlTableParser(SubmodelTableParser):
             return None
         return root
 
-    def _element_to_object(self, element: etree._Element, level: int) -> XmlObject:
+    def _element_to_object(self, element: etree._Element, level: int) -> XmlDataObject:
         if element is None:
             return None
-        return XmlObject(
+        return XmlDataObject(
             element=element,
             level=level,
         )

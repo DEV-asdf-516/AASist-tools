@@ -1,5 +1,4 @@
 import customtkinter as ctk
-from typing import Optional
 
 
 class Divider(ctk.CTkFrame):

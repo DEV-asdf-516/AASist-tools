@@ -34,13 +34,15 @@ class GuidanceScreen(ctk.CTkFrame):
         "technical_data": True,
         "operational_data": True,
         "all_attributes": False,
-        "id_short": True,
         "model_type": True,
+        "id_short": True,
         "semantic_id": True,
         "depth": True,
-        "definition": True,
+        "definition": False,
+        "description": True,
         "value": False,
         "value_type": False,
+        "reference_type": False,
         "simple_model_type": True,
         "depth_ellipses": False,
     }
@@ -53,7 +55,6 @@ class GuidanceScreen(ctk.CTkFrame):
         self.chosen_options: Dict[str, bool] = self.default_options.copy()
         self.theme_data = ctk.ThemeManager.theme
         self._table_format: TableFormat = TableFormat.DOCX
-        self._columns = []
         self.layout()
 
     def layout(self):
@@ -252,15 +253,20 @@ class GuidanceScreen(ctk.CTkFrame):
             parent, fg_color=self.theme_data["CTkFrame"]["fg_color"]
         )
         buttons_frame.grid(row=1, column=1, sticky=ctk.NE, pady=(0, 8), padx=(4, 0))
+
         file_exporter = FileExporter(
             buttons_frame,
-            on_export=self.handle_export_created_files,
-            columns=[
-                key
-                for key, value in self.chosen_options.items()
-                if key in {k for k in self.submodel_options.copy_chosen_options.keys()}
-                and value == True
-            ],
+            on_export=lambda: self.handle_export_created_files(
+                columns=[
+                    key
+                    for key, value in self.chosen_options.items()
+                    if key
+                    in {k for k in self.attribute_options.copy_chosen_options.keys()}
+                    and value == True
+                ],
+                simple_model_type=self.chosen_options.get("simple_model_type", True),
+                depth_ellipses=self.chosen_options.get("depth_ellipses", False),
+            ),
         )
         file_exporter.grid(row=0, column=0, sticky=ctk.E, pady=8)
 
@@ -276,29 +282,40 @@ class GuidanceScreen(ctk.CTkFrame):
             yield (file, parsers)
 
     def handle_file_selected(self, file_paths: List[str]):
+        self._readers.clear()
         self.loaded_files = file_paths
         for file in file_paths:
             self._readers.append((file, AasxFileReader(file)))
 
     def handle_export_created_files(self, **kwargs):
+        columns: List[str] = kwargs.get("columns", None)
+
+        if columns:
+            columns = [col for col in columns if not col.startswith("all")]
+
+        # TODO: 선택한 서브모델만
+
+        use_simple_model_type = kwargs.get("simple_model_type")
+        hide_depth_attributes = kwargs.get("depth_ellipses")
+
         for file, parsers in self._from_readers():
             for parser in parsers:
-                parser.parse_submodels()
+                parser.parse_submodels(**kwargs)
 
                 if isinstance(parser, XmlTableParser):
                     table_extractor = XmlTableExtractor(
-                        file_name=file,
-                        parser=parser,
-                        columns=kwargs.get("columns", None),
+                        file_name=file, parser=parser, columns=columns
                     )
                     table_extractor.extract_table()
-                    table_extractor.export(format=self._table_format)
+                    table_extractor.export(
+                        format=self._table_format,
+                        use_simple_model_type=use_simple_model_type,
+                        hide_depth_attributes=hide_depth_attributes,
+                    )
 
                 if isinstance(parser, JsonTableParser):
                     # TODO
                     pass
-
-        self._readers.clear()
 
     def handle_clear_output(self):
         # TODO

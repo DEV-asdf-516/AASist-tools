@@ -2,7 +2,6 @@ from io import BytesIO
 import logging
 import os
 from typing import IO, Iterable, Optional, Union
-from zipfile import ZipFile
 
 import pyecma376_2
 from guidance.schema_types import AasFileFormat

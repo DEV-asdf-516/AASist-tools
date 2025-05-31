@@ -106,12 +106,9 @@ class XmlTags(Enum):
     LEVEL_TYPE = "levelType"
     ASSET_ADMINISTRATION_SHELL = "assetAdministrationShell"
     CONCEPT_DESCRIPTION = "conceptDescription"
+    CONCEPT_DESCRIPTIONS = "conceptDescriptions"
     SUBMODEL = "submodel"
     SUBMODELS = "submodels"
-
-    @classmethod
-    def contains(cls, value: str, prefix: str = _AAS_KEY) -> bool:
-        return value.replace(prefix, "") in _XML_TAGS
 
     @classmethod
     def is_match(
@@ -122,6 +119,3 @@ class XmlTags(Enum):
     ) -> bool:
         stripped = tag.replace(prefix, "")
         return stripped == check.value
-
-
-_XML_TAGS = {tag.value: tag for tag in XmlTags}

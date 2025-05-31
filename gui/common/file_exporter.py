@@ -23,5 +23,5 @@ class FileExporter(ctk.CTkFrame):
         )
         export_button.grid(row=0, column=0, pady=(0, 4), ipady=8, sticky=ctk.E)
 
-    def export_files(self, **kwargs):
-        self.on_export(kwargs=kwargs)
+    def export_files(self, **kwargs: any):
+        self.on_export(**kwargs)

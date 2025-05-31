@@ -1,17 +1,21 @@
 import copy
-from dataclasses import asdict
 from types import SimpleNamespace
 from typing import Dict, Iterable, List, Tuple
 
 import pandas as pd
 
-from guidance.schema_types import ParentElement
+from guidance.schema_types import SIMPLE_MODEL_TYPES, ParentElement
 from guidance.submodel_table_extractor import (
     PipelineStage,
     SubmodelTableExtractor,
 )
 
-from guidance.xml.xml_table_parser import _AAS_KEY, XmlObject, XmlTableParser, XmlTags
+from guidance.xml.xml_table_parser import (
+    _AAS_KEY,
+    XmlDataObject,
+    XmlTableParser,
+    XmlTags,
+)
 from guidance.submodel_table_model import RowModel
 
 
@@ -26,10 +30,21 @@ class XmlTableExtractor(SubmodelTableExtractor):
     ):
         super().__init__(parser=parser, columns=columns)
         self._file_name = file_name
-        self._xml_object_store: Dict[str : Iterable[XmlObject]] = {}
+        self._xml_object_store: Dict[str : Iterable[XmlDataObject]] = {}
         self._submodel_store: Dict[str : Iterable[RowModel]] = {}
+        self._header = {
+            "id_short": "idShort",
+            "semantic_id": "SemanticID",
+            "description": "설명",
+            "value": "Value",
+            "value_type": "ValueType",
+            "model_type": "",
+            "reference_type": "참조유형",
+            "definition": "정의",
+        }
 
     def extract_table(self):
+
         for parent, children in self._match_submodel_elements(
             submodels=self._parser._objects
         ):
@@ -43,7 +58,7 @@ class XmlTableExtractor(SubmodelTableExtractor):
             fsm.__init__()
 
             for i, submodel_element in enumerate(submodel):
-                submodel_element: XmlObject
+                submodel_element: XmlDataObject
                 fsm.handle(submodel_element, idx=i)
                 if fsm.is_commited(submodel_element):
                     rows.append(fsm.committed_row)
@@ -53,33 +68,32 @@ class XmlTableExtractor(SubmodelTableExtractor):
 
             self._submodel_store[key] = list(rows)
 
-    def _to_dataframes(self) -> Iterable[Tuple[str, pd.DataFrame]]:
+    def _to_dataframes(self, **kwargs) -> Iterable[Tuple[str, pd.DataFrame]]:
         for key, submodel in self._submodel_store.items():
             submodel: Iterable[RowModel]
-            to_dicts = [asdict(s) for s in submodel]
-
+            to_dicts = [s.to_dict() for s in submodel]
             for d in to_dicts:
-                d["_definition"] = (
+                d["description"] = (
                     "\n".join(
-                        str(text) for text in d.get("_definition", []) if d is not None
+                        str(text) for text in d.get("description", []) if d is not None
                     )
-                    if isinstance(d.get("_definition"), list)
+                    if isinstance(d.get("description"), list)
                     else ""
                 )
+                if kwargs.get("use_simple_model_type", True):
+                    simple_names = {k.lower(): v for k, v in SIMPLE_MODEL_TYPES.items()}
+                    d["model_type"] = simple_names.get(
+                        d["model_type"].lower(), d["model_type"]
+                    )
 
             df = pd.DataFrame(to_dicts)
-            if self.columns:
-                df.reindex(columns=self.columns, fill_value="")
-
             df = df.dropna(how="all")
-            df = self._apply_hierarchy(df)
-            # TODO: (GUI option) model type 약어 적용
-            # kwargs.get('simple_model_type',True)
+            df = self._apply_hierarchy(df, **kwargs)
 
             yield (key, df)
 
-    def _apply_hierarchy(self, df: pd.DataFrame) -> pd.DataFrame:
-
+    def _apply_hierarchy(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+        hidden_SMC_attributes = kwargs.get("hide_depth_attributes", False)
         df["depth"] = pd.Categorical(
             df["depth"], categories=sorted(df["depth"].unique()), ordered=True
         ).codes
@@ -94,46 +108,112 @@ class XmlTableExtractor(SubmodelTableExtractor):
         for i in range(1, max_depth):
             df[f"SMC{i:02}"] = None
 
+        prev_ancestors = None
+
         for i, r in enumerate(df_):
             if r is None:
                 continue
 
+            r.index = i
+
+            if hidden_SMC_attributes:
+                if not self._have_children(r.index, df_):
+
+                    all_ancestors = list(self._find_all_ancestors(r.index, df_))
+
+                    if not all_ancestors or (
+                        self._find_parent(r.index, df_) < 0 and r.depth == min_depth
+                    ):
+                        df.at[r.index, f"SMC{r.depth+1:02}"] = "-"
+                        continue
+
+                    seen = set()
+                    current_ancestors = {
+                        d: a.id_short
+                        for d, a in all_ancestors
+                        if (d not in seen and not seen.add(d))
+                    }
+
+                    if not prev_ancestors:
+                        prev_ancestors = current_ancestors.copy()
+
+                    if (
+                        ParentElement.contains(df_[r.index - 1].model_type)
+                        or r.index == 0
+                        or prev_ancestors != current_ancestors
+                    ):
+                        for depth, ancestor in current_ancestors.items():
+                            df.at[r.index, f"SMC{depth+1:02}"] = ancestor
+
+                    prev_ancestors = current_ancestors.copy()
+
+                elif ParentElement.contains(r.model_type):
+                    df.loc[r.index] = None
+                    df.at[r.index, f"SMC{r.depth+1:02}"] = r.id_short
+
+                continue
+
             if ParentElement.contains(r.model_type):
-                df.at[i, f"SMC{r.depth+1:02}"] = r.id_short
-                continue
+                df.at[r.index, f"SMC{r.depth+1:02}"] = r.id_short
+            elif r.depth == min_depth:
+                df.at[r.index, f"SMC{r.depth+1:02}"] = "-"
+            else:
+                parent_idx = self._find_parent(r.index, df_)
+                if parent_idx >= 0:
+                    df.at[r.index, f"SMC{r.depth:02}"] = df_[parent_idx].id_short
 
-            if r.depth == min_depth:
-                df.at[i, f"SMC{r.depth+1:02}"] = "-"
-                continue
-
-            if i > 0 and r.depth > min_depth + 1:
-                ancestor_idx = self._find_nearest_ancestor(i, df_)
-                if ancestor_idx and ancestor_idx > 0:
-                    df.at[i, f"SMC{r.depth:02}"] = df_[ancestor_idx].id_short
-
-        group_columns = [f"SMC{i:02}" for i in range(1, max_depth)]
+        group_columns = [col for col in df.columns if col.startswith("SMC")]
         other_columns = [col for col in df.columns if col not in group_columns]
-        other_columns = other_columns[:-1] if not group_columns else other_columns
 
-        df = df[group_columns + other_columns]
+        df = df[group_columns + (other_columns if not self.columns else self.columns)]
         df = df.copy()
-        df.drop(["depth", "index"], axis=1, inplace=True)
-
+        if hidden_SMC_attributes:
+            df = df[~df["id_short"].isna()]
+        df.drop(["depth", "index"], axis=1, inplace=True, errors="ignore")
+        df.rename(columns=self._header, inplace=True)
         return df
 
-    def _find_nearest_ancestor(self, start: int, df_: pd.DataFrame) -> int:
+    def _have_children(self, start: int, df_: pd.DataFrame) -> bool:
         current_depth = df_[start].depth
-        for i in range(start, 0, -1):
-            if current_depth > df_[i].depth:
-                return i
+        for i in range(start + 1, len(df_)):
+            if current_depth < df_[i].depth:
+                return True
+            else:
+                return False
+        return False
 
-    def _match_submodel_elements(self, submodels: List[XmlObject]):
+    def _find_all_ancestors(
+        self, start: int, df_: pd.DataFrame, min_depth: int = 0
+    ) -> Iterable[Tuple[int, SimpleNamespace]]:
+        if start <= 0:
+            return
+        current_depth = df_[start].depth
+        for i in range(start - 1, -1, -1):
+            if current_depth > df_[i].depth and ParentElement.contains(
+                df_[i].model_type
+            ):
+                yield (df_[i].depth, df_[i])
+            if df_[i].depth == min_depth:
+                return
+
+    def _find_parent(self, start: int, df_: pd.DataFrame) -> int:
+        if start <= 0:
+            return -1
+        current_depth = df_[start].depth
+        for i in range(start - 1, -1, -1):
+            if current_depth > df_[i].depth and ParentElement.contains(
+                df_[i].model_type
+            ):
+                return i
+        return -1
+
+    def _match_submodel_elements(self, submodels: List[XmlDataObject]):
         submodel_level = next(
             submodel.level
             for submodel in submodels
             if submodel.text in self._parser._root_submodels
         )
-        children: List[XmlObject] = []
+        children: List[XmlDataObject] = []
         parent = None
         for submodel in submodels:
             if (
@@ -161,11 +241,15 @@ class XmlRowBuilder:
         self.committed_row: RowModel = RowModel()
         self._stage = PipelineStage.idle
 
-    def handle(self, element: XmlObject, idx: int = None):
+    def handle(self, element: XmlDataObject, idx: int = None):
         """
         idle -> (set_*) -> flush -> idle
         """
         while True:
+            """
+            continue: process next step
+            return: end of current step processing
+            """
             match self._stage:
                 case PipelineStage.idle:  # default state
                     if self._handle_idle(element):
@@ -174,8 +258,8 @@ class XmlRowBuilder:
                 case PipelineStage.set_semantic_id:
                     self._handle_set_semantic_id(element)
                     return
-                case PipelineStage.set_definition:
-                    self._handle_set_definition(element)
+                case PipelineStage.set_description:
+                    self._handle_set_description(element)
                     return
                 case PipelineStage.set_model_value:
                     self._handle_set_model_value(element)
@@ -189,13 +273,13 @@ class XmlRowBuilder:
                 case _:
                     return
 
-    def is_commited(self, element: XmlObject) -> bool:
+    def is_commited(self, element: XmlDataObject) -> bool:
         if not self.committed_row.is_empty:
             if XmlTags.is_match(element.tag, XmlTags.ID_SHORT):
                 return True
         return False
 
-    def _handle_idle(self, element: XmlObject) -> ContinueOrBreak:
+    def _handle_idle(self, element: XmlDataObject) -> ContinueOrBreak:
         continue_: bool = True
         break_: bool = False
 
@@ -210,9 +294,13 @@ class XmlRowBuilder:
         if self.current_row.is_empty:
             return break_
 
-        if XmlTags.is_match(element.tag, XmlTags.LANG_STRING_TEXT_TYPE):
+        if (
+            XmlTags.is_match(element.tag, XmlTags.LANG_STRING_TEXT_TYPE)
+            and self.current_row.model_type
+        ):
+            # TODO MLP 검사
             if element.children:
-                self._stage = PipelineStage.set_definition
+                self._stage = PipelineStage.set_description
             return break_
 
         if element.parent.tag == _AAS_KEY + self.current_row.model_type:
@@ -224,24 +312,28 @@ class XmlRowBuilder:
 
         return break_
 
-    def _handle_set_semantic_id(self, element: XmlObject):
+    def _handle_set_semantic_id(self, element: XmlDataObject):
+        if XmlTags.is_match(element.tag, XmlTags.TYPE) and XmlTags.is_match(
+            element.parent.tag, XmlTags.KEY
+        ):
+            self.current_row.reference_type = element.text
         if XmlTags.is_match(element.tag, XmlTags.VALUE):
             self.current_row.semantic_id = element.text
             self._stage = PipelineStage.idle
 
-    def _handle_set_definition(self, element: XmlObject):
+    def _handle_set_description(self, element: XmlDataObject):
         if XmlTags.is_match(element.tag, XmlTags.TEXT):
-            self.current_row.definition = element.text
+            self.current_row.description = element.text
             self._stage = PipelineStage.idle
 
-    def _handle_set_model_value(self, element: XmlObject):
+    def _handle_set_model_value(self, element: XmlDataObject):
         if XmlTags.is_match(element.tag, XmlTags.VALUE_TYPE):
             self.current_row.value_type = element.text
         if XmlTags.is_match(element.tag, XmlTags.VALUE):
             self.current_row.value = element.text
         self._stage = PipelineStage.idle
 
-    def _handle_set_id_short(self, element: XmlObject, idx: int):
+    def _handle_set_id_short(self, element: XmlDataObject, idx: int):
         self.current_row.index = idx
         self.current_row.depth = element.level
         self.current_row.id_short = element.text
