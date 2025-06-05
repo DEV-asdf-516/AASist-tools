@@ -13,7 +13,7 @@ class RowModel:
     _value: Optional[str] = field(init=False, default=None)
     _value_type: Optional[str] = field(init=False, default=None)
     _reference_type: Optional[str] = None
-    definition: Optional[str] = None
+    _definition: Optional[List[str]] = field(init=False, default=None)
 
     @property
     def description(self) -> Optional[List[str]]:
@@ -60,14 +60,43 @@ class RowModel:
             self._reference_type = value
 
     @property
+    def definition(self) -> Optional[str]:
+        return self._definition
+
+    @definition.setter
+    def definition(self, value: List[str]) -> None:
+        if self._definition is None:
+            self._definition = []
+        self._definition = value
+
+    @property
     def is_empty(self) -> bool:
-        return not any(
-            [
-                self.id_short,
-                self.model_type,
-                self.depth,
-            ]
-        )
+        return not any([self.id_short, self.model_type, self.depth])
+
+    def to_dict(self) -> dict:
+        return {(k.lstrip("_")): v for k, v in asdict(self).items()}
+
+
+@dataclass
+class ConceptDescriptionModel:
+    id_short: Optional[str] = None
+    id: Optional[str] = None
+    _definition: Optional[List[str]] = field(init=False, default=None)
+
+    @property
+    def definition(self) -> Optional[List[str]]:
+        return self._definition
+
+    @definition.setter
+    def definition(self, value: str) -> None:
+        if self._definition is None:
+            self._definition = []
+        if value:
+            self._definition.append(value)
+
+    @property
+    def is_empty(self) -> bool:
+        return not any([self.id_short, self.id])
 
     def to_dict(self) -> dict:
         return {(k.lstrip("_")): v for k, v in asdict(self).items()}

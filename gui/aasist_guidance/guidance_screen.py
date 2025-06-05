@@ -1,3 +1,4 @@
+from queue import Empty
 from typing import Dict, Iterable, List, Tuple
 import customtkinter as ctk
 
@@ -12,10 +13,13 @@ from gui.common.default_button import DefaultButton
 from gui.common.divider import Divider
 from gui.common.file_exporter import FileExporter
 from gui.common.file_selector import FileSelector
+from gui.common.log_box import LogBox
+from gui.handler import _GUIDANCE_LOG_NAME, LogLevel, QueueHandler
 from guidance.aasx_file_reader import AasxFileReader
 from guidance.json.json_table_parser import JsonTableParser
 from guidance.schema_types import TableFormat
 from guidance.submodel_table_parser import SubmodelTableParser
+
 from guidance.xml.xml_table_extractor import XmlTableExtractor
 from guidance.xml.xml_table_parser import XmlTableParser
 
@@ -33,6 +37,7 @@ class GuidanceScreen(ctk.CTkFrame):
         "digital_nameplate": True,
         "technical_data": True,
         "operational_data": True,
+        "etc": True,
         "all_attributes": False,
         "model_type": True,
         "id_short": True,
@@ -55,6 +60,7 @@ class GuidanceScreen(ctk.CTkFrame):
         self.chosen_options: Dict[str, bool] = self.default_options.copy()
         self.theme_data = ctk.ThemeManager.theme
         self._table_format: TableFormat = TableFormat.DOCX
+        self.log_handler = QueueHandler(_GUIDANCE_LOG_NAME)
         self.layout()
 
     def layout(self):
@@ -244,9 +250,12 @@ class GuidanceScreen(ctk.CTkFrame):
         title_label.grid(row=0, column=0, sticky=ctk.W, padx=16)
 
         # output box section
-        # TODO : 로그 출력
-        output_box = ctk.CTkTextbox(parent, state=ctk.DISABLED, width=600)
-        output_box.grid(row=1, column=0, sticky=ctk.NSEW, padx=8, pady=8)
+        self.output_box = LogBox(
+            parent,
+            log_queue=self.log_handler,
+            bg_color=self.theme_data["CTkFrame"]["fg_color"],
+        )
+        self.output_box.grid(row=1, column=0, sticky=ctk.NSEW, padx=8, pady=8)
 
         # button section
         buttons_frame = ctk.CTkFrame(
@@ -254,9 +263,16 @@ class GuidanceScreen(ctk.CTkFrame):
         )
         buttons_frame.grid(row=1, column=1, sticky=ctk.NE, pady=(0, 8), padx=(4, 0))
 
-        file_exporter = FileExporter(
+        self.file_exporter = FileExporter(
             buttons_frame,
             on_export=lambda: self.handle_export_created_files(
+                submodels=[
+                    key
+                    for key, value in self.chosen_options.items()
+                    if key
+                    in {k for k in self.submodel_options.copy_chosen_options.keys()}
+                    and value == True
+                ],
                 columns=[
                     key
                     for key, value in self.chosen_options.items()
@@ -264,11 +280,11 @@ class GuidanceScreen(ctk.CTkFrame):
                     in {k for k in self.attribute_options.copy_chosen_options.keys()}
                     and value == True
                 ],
-                simple_model_type=self.chosen_options.get("simple_model_type", True),
-                depth_ellipses=self.chosen_options.get("depth_ellipses", False),
+                simple_model_type=self.chosen_options.get("simple_model_type"),
+                depth_ellipses=self.chosen_options.get("depth_ellipses"),
             ),
         )
-        file_exporter.grid(row=0, column=0, sticky=ctk.E, pady=8)
+        self.file_exporter.grid(row=0, column=0, sticky=ctk.E, pady=8)
 
         clear_button = ClearButton(buttons_frame, on_click=self.handle_clear_output)
         clear_button.grid(row=1, column=0, sticky=ctk.E, pady=(0, 8))
@@ -277,7 +293,9 @@ class GuidanceScreen(ctk.CTkFrame):
         for file, reader in self._readers:
             parsers = list(reader.load_submodel_table_parsers())
             if not parsers:
-                # TODO: handle error
+                self.log_handler.add(
+                    f"No parser found for file: {file}", log_level=LogLevel.ERROR
+                )
                 continue
             yield (file, parsers)
 
@@ -289,11 +307,10 @@ class GuidanceScreen(ctk.CTkFrame):
 
     def handle_export_created_files(self, **kwargs):
         columns: List[str] = kwargs.get("columns", None)
+        submodels: List[str] = kwargs.get("submodels", None)
 
         if columns:
             columns = [col for col in columns if not col.startswith("all")]
-
-        # TODO: 선택한 서브모델만
 
         use_simple_model_type = kwargs.get("simple_model_type")
         hide_depth_attributes = kwargs.get("depth_ellipses")
@@ -304,22 +321,22 @@ class GuidanceScreen(ctk.CTkFrame):
 
                 if isinstance(parser, XmlTableParser):
                     table_extractor = XmlTableExtractor(
-                        file_name=file, parser=parser, columns=columns
-                    )
-                    table_extractor.extract_table()
-                    table_extractor.export(
-                        format=self._table_format,
+                        file_name=file,
+                        parser=parser,
+                        columns=columns,
+                        submodels=submodels,
                         use_simple_model_type=use_simple_model_type,
                         hide_depth_attributes=hide_depth_attributes,
                     )
+                    table_extractor.extract_table()
+                    table_extractor.export(format=self._table_format)
 
                 if isinstance(parser, JsonTableParser):
                     # TODO
                     pass
 
     def handle_clear_output(self):
-        # TODO
-        pass
+        self.output_box.clear()
 
     def handle_toggle_changed(self, option: str):
         if "word" in option.lower():

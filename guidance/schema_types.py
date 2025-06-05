@@ -2,8 +2,8 @@ from enum import Enum, auto
 
 
 class TableFormat(Enum):
-    XLSX = auto()
-    DOCX = auto()
+    XLSX = ".xlsx"
+    DOCX = ".docx"
 
 
 class AasFileFormat(Enum):

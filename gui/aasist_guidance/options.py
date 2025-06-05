@@ -59,6 +59,7 @@ class SubmodelOptions(ctk.CTkFrame):
             ("digital_nameplate", "DigitalNameplate"),
             ("technical_data", "TechnicalData"),
             ("operational_data", "OperationalData"),
+            ("etc", "기타"),
         ]
         self.copy_chosen_options: Dict[str, ctk.BooleanVar] = {
             key: ctk.BooleanVar(self, value=value)
@@ -91,7 +92,8 @@ class SubmodelOptions(ctk.CTkFrame):
                 for k in self.copy_chosen_options
                 if k != "all_submodels"
             ]
-
+        elif self.copy_chosen_options["all_submodels"].get():
+            self.copy_chosen_options["all_submodels"].set(False)
         self._callback()
 
     def init_checkboxes(self):
@@ -124,7 +126,7 @@ class AttiributeOptions(ctk.CTkFrame):
             ("id_short", "idShort"),
             ("semantic_id", "Semantic ID"),
             ("depth", "SMC Hierarchy"),
-            ("definition", "정의"),
+            ("definition", "정의(IEC61360)"),
             ("description", "설명"),
             ("value", "Value"),
             ("value_type", "Value Type"),
@@ -162,7 +164,8 @@ class AttiributeOptions(ctk.CTkFrame):
                 for k in self.copy_chosen_options
                 if k != "all_attributes"
             ]
-
+        elif self.copy_chosen_options["all_attributes"].get():
+            self.copy_chosen_options["all_attributes"].set(False)
         self._callback()
 
     def init_checkboxes(self):
@@ -191,7 +194,7 @@ class SettingOptions(ctk.CTkFrame):
         self.default_options = default_options
         self.setting_options = [
             ("simple_model_type", "메타모델을 약어로 표시"),
-            ("depth_ellipses", "계층 구조 간략화"),
+            ("depth_ellipses", "가이던스 표 형식 적용"),
         ]
         self.copy_chosen_options: Dict[str, ctk.BooleanVar] = {
             key: ctk.BooleanVar(self, value=value)
@@ -208,7 +211,7 @@ class SettingOptions(ctk.CTkFrame):
             self,
             text=self.setting_options[USE_SIMPLE_TYPE_INDEX][-1],
             variable=self.copy_chosen_options["simple_model_type"],
-            command=self._callback(),
+            command=self._callback,
             font=ctk.CTkFont(size=16),
             width=16,
             height=16,
@@ -227,7 +230,7 @@ class SettingOptions(ctk.CTkFrame):
             self,
             text=self.setting_options[HIERARCHY_ELLIPSES_INDEX][-1],
             variable=self.copy_chosen_options["depth_ellipses"],
-            command=lambda: self._callback(),
+            command=self._callback,
             font=ctk.CTkFont(size=16),
             width=16,
             height=16,
@@ -247,7 +250,6 @@ class SettingOptions(ctk.CTkFrame):
     def init_checkboxes(self):
         for key, var in self.copy_chosen_options.items():
             var.set(self.default_options[key])
-
         self._callback()
 
     def _callback(self):

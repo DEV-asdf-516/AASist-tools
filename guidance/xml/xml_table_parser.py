@@ -22,18 +22,13 @@ class XmlDataObject(ParseObject):
         return f"""{"-" * self.level}> XmlObject(level={self.level}, tag={self.tag}, text={self.text}, parent={self.parent.tag})"""
 
 
-class XmlConceptDescriptionObject:
-    def __init__(self):
-        pass
-
-
 class XmlTableParser(SubmodelTableParser):
 
     def __init__(self, file: IO):
         super().__init__(file=file)
         self.bin: IO = file
         self._objects: List[XmlDataObject] = []
-        self._definitions: List[XmlConceptDescriptionObject] = []
+        self._definitions: List[XmlDataObject] = []
         self._root_submodels: List[str] = []
 
     def parse_submodels(self, **kwargs: Any):
@@ -58,7 +53,6 @@ class XmlTableParser(SubmodelTableParser):
             if desc_object is None:
                 continue
             concept_description_elements.append(desc_object)
-            # TODO 로그찍기
 
         for submodel, level in self._iterate_elements(aas_submodels, 0):
             data_object = self._element_to_object(submodel, level)
@@ -73,8 +67,6 @@ class XmlTableParser(SubmodelTableParser):
 
         self._objects = list(submodel_elements)
         self._definitions = list(concept_description_elements)
-        print(len(self._objects), "submodels found")
-        print(len(self._definitions), "concept descriptions found")
 
     def parse_xml(self) -> Optional[etree._Element]:
         parser = etree.XMLParser(
@@ -99,6 +91,8 @@ class XmlTableParser(SubmodelTableParser):
     def _iterate_elements(
         self, element: etree._Element, level: int = 0
     ) -> Iterable[tuple[etree._Element, int]]:
+        if element is None:
+            return
         for child in element.iterchildren():
             yield child, level + 1
             yield from self._iterate_elements(child, level + 1)

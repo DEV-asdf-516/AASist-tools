@@ -1,22 +1,21 @@
-import copy
+import logging
 from types import SimpleNamespace
 from typing import Dict, Iterable, List, Tuple
 
 import pandas as pd
 
-from guidance.schema_types import SIMPLE_MODEL_TYPES, ParentElement
-from guidance.submodel_table_extractor import (
-    PipelineStage,
-    SubmodelTableExtractor,
-)
+from gui.handler import _GUIDANCE_LOG_NAME, LogLevel, QueueHandler
+from guidance.schema_types import SIMPLE_MODEL_TYPES, ParentElement, TableFormat
+from guidance.submodel_table_extractor import SubmodelTableExtractor
 
+from guidance.xml.xml_object_builder import XmlConceptDescriptionBuilder, XmlRowBuilder
 from guidance.xml.xml_table_parser import (
-    _AAS_KEY,
     XmlDataObject,
     XmlTableParser,
-    XmlTags,
 )
-from guidance.submodel_table_model import RowModel
+from guidance.submodel_table_model import ConceptDescriptionModel, RowModel
+
+logger = logging.getLogger(__name__)
 
 
 class XmlTableExtractor(SubmodelTableExtractor):
@@ -25,10 +24,16 @@ class XmlTableExtractor(SubmodelTableExtractor):
         self,
         file_name: str,
         parser: XmlTableParser,
+        submodels: List[str] = None,
         columns: List[str] = None,
         **kwargs,
     ):
-        super().__init__(parser=parser, columns=columns)
+        super().__init__(
+            parser=parser,
+            submodels=submodels,
+            columns=columns,
+            log_handler=QueueHandler(_GUIDANCE_LOG_NAME),
+        )
         self._file_name = file_name
         self._xml_object_store: Dict[str : Iterable[XmlDataObject]] = {}
         self._submodel_store: Dict[str : Iterable[RowModel]] = {}
@@ -42,33 +47,59 @@ class XmlTableExtractor(SubmodelTableExtractor):
             "reference_type": "참조유형",
             "definition": "정의",
         }
+        self._cd_store: List[ConceptDescriptionModel] = []
+        self.log_handler = QueueHandler(_GUIDANCE_LOG_NAME)
+        self.use_simple_model_type = kwargs.get("use_simple_model_type")
+        self.hide_depth_attributes = kwargs.get("hide_depth_attributes")
 
     def extract_table(self):
+        self._assemble_concept_descriptions(
+            concept_descriptions=self._parser._definitions
+        )
 
         for parent, children in self._match_submodel_elements(
             submodels=self._parser._objects
         ):
-            self._xml_object_store[parent.text] = children
+            submodel_name = parent.text.lower()
+            is_sub_matched = any(submodel_name in sub.lower() for sub in self.submodels)
+            all_submodels = "all_submodels" in self.submodels
+            etc_submodels = "etc" in self.submodels
 
-        fsm = XmlRowBuilder()
+            if (
+                all_submodels
+                or not self.submodels  # 아무것도 선택 안한 경우 전부 추출
+                or is_sub_matched
+                or (not is_sub_matched and etc_submodels)
+            ):
+                self._xml_object_store[parent.text] = children
+                self.log_handler.add(f"Start extracting Submodel: {parent.text}")
+
+        row_builder = XmlRowBuilder()
         rows: List[RowModel] = []
 
         for key, submodel in self._xml_object_store.items():
             rows = []
-            fsm.__init__()
+            row_builder.__init__()
 
             for i, submodel_element in enumerate(submodel):
                 submodel_element: XmlDataObject
-                fsm.handle(submodel_element, idx=i)
-                if fsm.is_commited(submodel_element):
-                    rows.append(fsm.committed_row)
+                row_builder.handle(submodel_element, idx=i)
+                if row_builder.is_committed(submodel_element):
+                    cd: ConceptDescriptionModel = self._find_concept_description(
+                        row_builder.committed_instance.id_short,
+                        row_builder.committed_instance.semantic_id,
+                    )
+                    row_builder.committed_instance.definition = (
+                        cd.definition if cd else None
+                    )
+                    rows.append(row_builder.committed_instance)
 
-            if not fsm.current_row.is_empty:
-                rows.append(fsm.current_row)
+            if not row_builder.current_instance.is_empty:
+                rows.append(row_builder.current_instance)
 
             self._submodel_store[key] = list(rows)
 
-    def _to_dataframes(self, **kwargs) -> Iterable[Tuple[str, pd.DataFrame]]:
+    def _to_dataframes(self) -> Iterable[Tuple[str, pd.DataFrame]]:
         for key, submodel in self._submodel_store.items():
             submodel: Iterable[RowModel]
             to_dicts = [s.to_dict() for s in submodel]
@@ -80,7 +111,14 @@ class XmlTableExtractor(SubmodelTableExtractor):
                     if isinstance(d.get("description"), list)
                     else ""
                 )
-                if kwargs.get("use_simple_model_type", True):
+                d["definition"] = (
+                    "\n".join(
+                        str(text) for text in d.get("definition", []) if d is not None
+                    )
+                    if isinstance(d.get("definition"), list)
+                    else ""
+                )
+                if self.use_simple_model_type:
                     simple_names = {k.lower(): v for k, v in SIMPLE_MODEL_TYPES.items()}
                     d["model_type"] = simple_names.get(
                         d["model_type"].lower(), d["model_type"]
@@ -88,12 +126,26 @@ class XmlTableExtractor(SubmodelTableExtractor):
 
             df = pd.DataFrame(to_dicts)
             df = df.dropna(how="all")
-            df = self._apply_hierarchy(df, **kwargs)
+            df = self._apply_hierarchy(df)
 
             yield (key, df)
 
-    def _apply_hierarchy(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
-        hidden_SMC_attributes = kwargs.get("hide_depth_attributes", False)
+    def export(self, format: TableFormat):
+        self.log_handler.add(f"Convert Submodel metadata to {format.name} ...")
+        try:
+            super().export(format, log_handler=self.log_handler)
+            self.log_handler.add(
+                f"All Submodels of {self._file_name} have been successfully exported.",
+                log_level=LogLevel.SUCCESS,
+            )
+        except Exception as e:
+            logger.error(e)
+            self.log_handler.add(
+                f"An error occurred while exporting the file ...",
+                log_level=LogLevel.ERROR,
+            )
+
+    def _apply_hierarchy(self, df: pd.DataFrame) -> pd.DataFrame:
         df["depth"] = pd.Categorical(
             df["depth"], categories=sorted(df["depth"].unique()), ordered=True
         ).codes
@@ -116,7 +168,7 @@ class XmlTableExtractor(SubmodelTableExtractor):
 
             r.index = i
 
-            if hidden_SMC_attributes:
+            if self.hide_depth_attributes:
                 if not self._have_children(r.index, df_):
 
                     all_ancestors = list(self._find_all_ancestors(r.index, df_))
@@ -167,7 +219,7 @@ class XmlTableExtractor(SubmodelTableExtractor):
 
         df = df[group_columns + (other_columns if not self.columns else self.columns)]
         df = df.copy()
-        if hidden_SMC_attributes:
+        if self.hide_depth_attributes:
             df = df[~df["id_short"].isna()]
         df.drop(["depth", "index"], axis=1, inplace=True, errors="ignore")
         df.rename(columns=self._header, inplace=True)
@@ -231,116 +283,29 @@ class XmlTableExtractor(SubmodelTableExtractor):
         if parent is not None:
             yield (parent, children)
 
+    def _assemble_concept_descriptions(self, concept_descriptions: List[XmlDataObject]):
+        self._cd_store = []
 
-ContinueOrBreak = bool
+        cd_builder: XmlConceptDescriptionBuilder = XmlConceptDescriptionBuilder()
+        cds: List[ConceptDescriptionModel] = []
 
+        for cd in concept_descriptions:
+            cd_builder.handle(cd)
+            if cd_builder.is_committed(cd):
+                cds.append(cd_builder.committed_instance)
+                continue
 
-class XmlRowBuilder:
-    def __init__(self):
-        self.current_row: RowModel = RowModel()
-        self.committed_row: RowModel = RowModel()
-        self._stage = PipelineStage.idle
+            if not cd_builder.current_instance.is_empty:
+                cds.append(cd_builder.current_instance)
 
-    def handle(self, element: XmlDataObject, idx: int = None):
-        """
-        idle -> (set_*) -> flush -> idle
-        """
-        while True:
-            """
-            continue: process next step
-            return: end of current step processing
-            """
-            match self._stage:
-                case PipelineStage.idle:  # default state
-                    if self._handle_idle(element):
-                        continue
-                    return
-                case PipelineStage.set_semantic_id:
-                    self._handle_set_semantic_id(element)
-                    return
-                case PipelineStage.set_description:
-                    self._handle_set_description(element)
-                    return
-                case PipelineStage.set_model_value:
-                    self._handle_set_model_value(element)
-                    return
-                case PipelineStage.set_id_short:
-                    self._handle_set_id_short(element, idx)
-                    return
-                case PipelineStage.flush:
-                    self._handle_flush()
-                    continue
-                case _:
-                    return
+        self._cd_store = cds.copy()
 
-    def is_commited(self, element: XmlDataObject) -> bool:
-        if not self.committed_row.is_empty:
-            if XmlTags.is_match(element.tag, XmlTags.ID_SHORT):
-                return True
-        return False
-
-    def _handle_idle(self, element: XmlDataObject) -> ContinueOrBreak:
-        continue_: bool = True
-        break_: bool = False
-
-        if XmlTags.is_match(element.tag, XmlTags.ID_SHORT):
-            if not self.current_row.is_empty:
-                self._stage = PipelineStage.flush
-                return continue_
-
-            self._stage = PipelineStage.set_id_short
-            return continue_
-
-        if self.current_row.is_empty:
-            return break_
-
-        if (
-            XmlTags.is_match(element.tag, XmlTags.LANG_STRING_TEXT_TYPE)
-            and self.current_row.model_type
-        ):
-            # TODO MLP 검사
-            if element.children:
-                self._stage = PipelineStage.set_description
-            return break_
-
-        if element.parent.tag == _AAS_KEY + self.current_row.model_type:
-            if XmlTags.is_match(element.tag, XmlTags.SEMANTIC_ID):
-                self._stage = PipelineStage.set_semantic_id
-                return break_
-            self._stage = PipelineStage.set_model_value
-            return continue_
-
-        return break_
-
-    def _handle_set_semantic_id(self, element: XmlDataObject):
-        if XmlTags.is_match(element.tag, XmlTags.TYPE) and XmlTags.is_match(
-            element.parent.tag, XmlTags.KEY
-        ):
-            self.current_row.reference_type = element.text
-        if XmlTags.is_match(element.tag, XmlTags.VALUE):
-            self.current_row.semantic_id = element.text
-            self._stage = PipelineStage.idle
-
-    def _handle_set_description(self, element: XmlDataObject):
-        if XmlTags.is_match(element.tag, XmlTags.TEXT):
-            self.current_row.description = element.text
-            self._stage = PipelineStage.idle
-
-    def _handle_set_model_value(self, element: XmlDataObject):
-        if XmlTags.is_match(element.tag, XmlTags.VALUE_TYPE):
-            self.current_row.value_type = element.text
-        if XmlTags.is_match(element.tag, XmlTags.VALUE):
-            self.current_row.value = element.text
-        self._stage = PipelineStage.idle
-
-    def _handle_set_id_short(self, element: XmlDataObject, idx: int):
-        self.current_row.index = idx
-        self.current_row.depth = element.level
-        self.current_row.id_short = element.text
-        self.current_row.model_type = element.parent.tag.replace(_AAS_KEY, "")
-        self._stage = PipelineStage.idle
-
-    def _handle_flush(self):
-        self.committed_row = copy.deepcopy(self.current_row)
-        self.current_row = RowModel()
-        self._stage = PipelineStage.idle
+    def _find_concept_description(
+        self,
+        id_short: str,
+        semantic_id: str,
+    ) -> ConceptDescriptionModel | None:
+        for i, cd in enumerate(self._cd_store):
+            if cd.id_short == id_short and cd.id == semantic_id:
+                return self._cd_store.pop(i)
+        return None

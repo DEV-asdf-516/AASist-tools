@@ -27,9 +27,10 @@ class ParseObject(ABC, Generic[_P]):
 
 
 class SubmodelTableParser(ABC):
-    def __init__(self, file: IO, **kwargs: any):
+    def __init__(self, file: IO, **kwargs: Any):
         self._file = file
         self._objects: Iterable[ParseObject] = []
+        self._definitions: Iterable[ParseObject] = []
         self._root_submodels: List[str] = []
 
     @abstractmethod
