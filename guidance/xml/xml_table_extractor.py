@@ -1,6 +1,8 @@
 import logging
+import re
+import traceback
 from types import SimpleNamespace
-from typing import Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 import pandas as pd
 
@@ -8,7 +10,9 @@ from gui.handler import _GUIDANCE_LOG_NAME, LogLevel, QueueHandler
 from guidance.schema_types import SIMPLE_MODEL_TYPES, ParentElement, TableFormat
 from guidance.submodel_table_extractor import SubmodelTableExtractor
 
+from guidance.submodel_table_parser import ParseObjectIdentifier
 from guidance.xml.xml_object_builder import XmlConceptDescriptionBuilder, XmlRowBuilder
+from guidance.xml.xml_schema_types import XmlTags
 from guidance.xml.xml_table_parser import (
     XmlDataObject,
     XmlTableParser,
@@ -35,7 +39,7 @@ class XmlTableExtractor(SubmodelTableExtractor):
             log_handler=QueueHandler(_GUIDANCE_LOG_NAME),
         )
         self._file_name = file_name
-        self._xml_object_store: Dict[str : Iterable[XmlDataObject]] = {}
+        self._xml_object_store: Dict[str : Tuple[str, Iterable[XmlDataObject]]] = {}
         self._submodel_store: Dict[str : Iterable[RowModel]] = {}
         self._header = {
             "id_short": "idShort",
@@ -57,22 +61,28 @@ class XmlTableExtractor(SubmodelTableExtractor):
             concept_descriptions=self._parser._definitions
         )
 
-        for parent, children in self._match_submodel_elements(
+        for parent, children, shell in self._match_submodel_elements(
             submodels=self._parser._objects
         ):
-            submodel_name = parent.text.lower()
-            is_sub_matched = any(submodel_name in sub.lower() for sub in self.submodels)
+            submodel_name: str = parent.lower()
+            is_sub_matched = any(
+                submodel_name in sub.replace("_", "") for sub in self.submodels
+            )
             all_submodels = "all_submodels" in self.submodels
             etc_submodels = "etc" in self.submodels
-
-            if (
-                all_submodels
-                or not self.submodels  # 아무것도 선택 안한 경우 전부 추출
-                or is_sub_matched
-                or (not is_sub_matched and etc_submodels)
+            if any(
+                [
+                    is_sub_matched,
+                    all_submodels,
+                    not self.submodels,  # 아무것도 선택하지 않았다면 전부 추출
+                    (not is_sub_matched and etc_submodels),
+                ]
             ):
-                self._xml_object_store[parent.text] = children
-                self.log_handler.add(f"Start extracting Submodel: {parent.text}")
+                if shell is None:
+                    continue
+                key = f"{shell}_{parent}"
+                self._xml_object_store[key] = children
+                self.log_handler.add(f"Start extracting Submodel: {key}")
 
         row_builder = XmlRowBuilder()
         rows: List[RowModel] = []
@@ -126,9 +136,19 @@ class XmlTableExtractor(SubmodelTableExtractor):
 
             df = pd.DataFrame(to_dicts)
             df = df.dropna(how="all")
-            df = self._apply_hierarchy(df)
+            result_df = self._apply_hierarchy(df)
+            result_df.rename(columns=self._header, inplace=True)
+            result_df.rename(
+                columns={
+                    col: f"SMC{int(col[3:])-1:02d}"
+                    for col in df.columns
+                    if col.startswith("SMC")
+                },
+                inplace=True,
+            )
+            result_df = result_df.iloc[1:, 1:]
 
-            yield (key, df)
+            yield (key, result_df)
 
     def export(self, format: TableFormat):
         self.log_handler.add(f"Convert Submodel metadata to {format.name} ...")
@@ -139,7 +159,7 @@ class XmlTableExtractor(SubmodelTableExtractor):
                 log_level=LogLevel.SUCCESS,
             )
         except Exception as e:
-            logger.error(e)
+            traceback.print_exc()
             self.log_handler.add(
                 f"An error occurred while exporting the file ...",
                 log_level=LogLevel.ERROR,
@@ -160,7 +180,7 @@ class XmlTableExtractor(SubmodelTableExtractor):
         for i in range(1, max_depth):
             df[f"SMC{i:02}"] = None
 
-        prev_ancestors = None
+        prev_ancestors: dict[int, Any] = None
 
         for i, r in enumerate(df_):
             if r is None:
@@ -222,7 +242,6 @@ class XmlTableExtractor(SubmodelTableExtractor):
         if self.hide_depth_attributes:
             df = df[~df["id_short"].isna()]
         df.drop(["depth", "index"], axis=1, inplace=True, errors="ignore")
-        df.rename(columns=self._header, inplace=True)
         return df
 
     def _have_children(self, start: int, df_: pd.DataFrame) -> bool:
@@ -260,28 +279,47 @@ class XmlTableExtractor(SubmodelTableExtractor):
         return -1
 
     def _match_submodel_elements(self, submodels: List[XmlDataObject]):
-        submodel_level = next(
-            submodel.level
-            for submodel in submodels
-            if submodel.text in self._parser._root_submodels
-        )
-        children: List[XmlDataObject] = []
-        parent = None
-        for submodel in submodels:
-            if (
-                submodel.level == submodel_level
-                and submodel.text in self._parser._root_submodels
-            ):
-                if parent is None:
-                    parent = submodel
-                if submodel.text != parent.text:
-                    yield (parent, children)
+        try:
+            identifier_map: Dict[str, Tuple[str, ParseObjectIdentifier]] = {
+                identifier.id: (key, identifier)
+                for key, identifiers in self._parser._submodel_identifiers.items()
+                for identifier in identifiers
+            }
+
+            submodel_level = min(submodel.level for submodel in submodels)
+
+            children: List[XmlDataObject] = []
+
+            current_submodel: Tuple[str, ParseObjectIdentifier] = None
+            for submodel in submodels:
+
+                if submodel.level == submodel_level:
+                    if not current_submodel:  # 첫 서브모델
+                        continue
+
+                    aas_shell, identifier = current_submodel
+
+                    yield (identifier.id_short, children, aas_shell)
+
                     children = []
-                    parent = submodel
-                continue
-            children.append(submodel)
-        if parent is not None:
-            yield (parent, children)
+
+                    continue
+
+                if XmlTags.is_match(submodel.tag, XmlTags.ID):
+                    identifier: ParseObjectIdentifier
+
+                    current_submodel = identifier_map.get(submodel.text)
+                    aas_shell, identifier = current_submodel
+
+                children.append(submodel)
+
+            if children:
+                aas_shell, identifier = current_submodel
+                yield (identifier.id_short, children, aas_shell)
+
+        except ValueError as e:
+            logger.error(f"Error matching submodel elements: {e}")
+            pass
 
     def _assemble_concept_descriptions(self, concept_descriptions: List[XmlDataObject]):
         self._cd_store = []

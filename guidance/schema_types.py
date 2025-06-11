@@ -68,6 +68,5 @@ SIMPLE_MODEL_TYPES = {
     "Operation": "Opr",
     "Entity": "Ent",
     "BasicEvent": "Evt",
-    # etc
-    "SubmodelElementList": "ElementList",
+    "SubmodelElementList": "SML",
 }

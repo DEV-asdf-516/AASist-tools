@@ -7,6 +7,7 @@ class RowModel:
     index: Optional[int] = None
     depth: Optional[int] = None
     model_type: Optional[str] = None
+    id: Optional[str] = None
     id_short: Optional[str] = None
     _semantic_id: Optional[str] = field(init=False, default=None)
     _description: Optional[List[str]] = field(init=False, default=None)

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 import os
+import re
 from typing import (
     Dict,
     Iterable,
@@ -24,6 +25,7 @@ class RowPipelineStage(Enum):
     set_semantic_id = auto()
     set_description = auto()
     set_MLP_model_value = auto()
+    set_submodel_id = auto()
     flush = auto()
 
 
@@ -49,7 +51,7 @@ class SubmodelTableExtractor(ABC):
         self._file_name = kwargs.get("file_name", None)
 
     def export(self, format: TableFormat, **kwargs):
-        self._prefix = (self._file_name or "output").split(".")[0]
+        self._prefix = re.sub(r"\.[^.]*$", "", (self._file_name or "output"))
 
         log_handler: QueueHandler = kwargs.get(
             "log_handler", QueueHandler(_GUIDANCE_LOG_NAME)
@@ -115,7 +117,7 @@ class SubmodelTableExtractor(ABC):
                     os.remove(temp_file_name)
         except Exception as e:
             log_handler.add(
-                f"Error exporting submodel '{submodel}' : {e.__class__}",
+                f"Error exporting submodel : {e.__class__}",
                 log_level=LogLevel.ERROR,
             )
 

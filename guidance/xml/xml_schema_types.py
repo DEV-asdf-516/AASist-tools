@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Iterable, Union
 
 
 _XML_KEY_MAP = {"aas": "https://admin-shell.io/aas/3/0"}
@@ -105,6 +106,7 @@ class XmlTags(Enum):
     VALUE_LIST = "valueList"
     LEVEL_TYPE = "levelType"
     ASSET_ADMINISTRATION_SHELL = "assetAdministrationShell"
+    ASSET_ADMINISTRATION_SHELLS = "assetAdministrationShells"
     CONCEPT_DESCRIPTION = "conceptDescription"
     CONCEPT_DESCRIPTIONS = "conceptDescriptions"
     SUBMODEL = "submodel"
@@ -114,8 +116,16 @@ class XmlTags(Enum):
     def is_match(
         cls,
         tag: str,
-        check: "XmlTags",
+        check: Union["XmlTags", Iterable["XmlTags"]],
         prefix: str = _AAS_KEY,
     ) -> bool:
+        if tag is None:
+            return False
         stripped = tag.replace(prefix, "")
-        return stripped == check.value
+        try:
+            if isinstance(check, XmlTags):
+                return stripped == check.value
+            if isinstance(check, Iterable):
+                return any(stripped == item.value for item in check)
+        except TypeError:
+            return False

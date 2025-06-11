@@ -1,6 +1,7 @@
 from io import BytesIO
 import logging
 import os
+import re
 from typing import IO, Iterable, Optional, Union
 
 import pyecma376_2
@@ -35,12 +36,14 @@ class AasxFileReader:
 
         aas = aasx_origin[0]
 
-        aas_spec = self.zip_reader.get_related_parts_by_type(aas)[self.AAS_SPEC_KEY]
+        aas_specs = self.zip_reader.get_related_parts_by_type(aas)[self.AAS_SPEC_KEY]
 
-        if not aas_spec:
+        if not aas_specs:
             raise ValueError(f"no aas spec found in {aas}")
 
-        for aas_part in aas_spec:
+        aas_specs = set(aas_specs)
+
+        for aas_part in aas_specs:
             parsers.append(self._parse_aas_part(aas_part))
 
             for split_part in self.zip_reader.get_related_parts_by_type(aas_part)[
@@ -57,7 +60,7 @@ class AasxFileReader:
         aas_part_name: str,
     ) -> SubmodelTableParser:
         content_type: str = self.zip_reader.get_content_type(aas_part_name)
-        extension = aas_part_name.split("/")[-1].split(".")[-1]
+        extension = re.sub(r".*\.", "", aas_part_name)
 
         if not content_type.startswith(("application/", "text/")):
             logger.debug(f"not support for this content type: {content_type}")

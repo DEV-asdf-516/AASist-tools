@@ -1,4 +1,3 @@
-from queue import Empty
 from typing import Dict, Iterable, List, Tuple
 import customtkinter as ctk
 

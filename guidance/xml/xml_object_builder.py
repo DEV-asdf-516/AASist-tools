@@ -52,6 +52,9 @@ class XmlRowBuilder(ModelBuilder):
                 case RowPipelineStage.set_id_short:
                     self._handle_set_id_short(object, idx)
                     return
+                case RowPipelineStage.set_submodel_id:
+                    self._handle_set_submodel_id(object)
+                    return
                 case RowPipelineStage.flush:
                     self._handle_flush()
                     continue
@@ -68,6 +71,7 @@ class XmlRowBuilder(ModelBuilder):
         continue_: bool = True
         break_: bool = False
 
+        # flow idShort
         if XmlTags.is_match(object.tag, XmlTags.ID_SHORT):
             if not self.current_instance.is_empty:
                 self._stage = RowPipelineStage.flush
@@ -78,13 +82,21 @@ class XmlRowBuilder(ModelBuilder):
         if self.current_instance.is_empty:
             return break_
 
+        # flow submodel id
+        if XmlTags.is_match(object.parent.tag, XmlTags.SUBMODEL) and XmlTags.is_match(
+            object.tag, XmlTags.ID
+        ):
+            self._stage = RowPipelineStage.set_submodel_id
+            return continue_
+
+        # flow description or value
         if (
             XmlTags.is_match(object.tag, XmlTags.LANG_STRING_TEXT_TYPE)
             and self.current_instance.model_type
         ):
-            if (
-                self.current_instance.model_type
-                == XmlTags.MULTI_LANGUAGE_PROPERTY.value
+
+            if XmlTags.is_match(
+                self.current_instance.model_type, XmlTags.MULTI_LANGUAGE_PROPERTY
             ):
                 self._stage = RowPipelineStage.set_MLP_model_value
                 return break_
@@ -92,6 +104,7 @@ class XmlRowBuilder(ModelBuilder):
                 self._stage = RowPipelineStage.set_description
             return break_
 
+        # flow semantic id or value
         if object.parent.tag == _AAS_KEY + self.current_instance.model_type:
             if XmlTags.is_match(object.tag, XmlTags.SEMANTIC_ID):
                 self._stage = RowPipelineStage.set_semantic_id
@@ -132,6 +145,10 @@ class XmlRowBuilder(ModelBuilder):
         self.current_instance.depth = object.level
         self.current_instance.id_short = object.text
         self.current_instance.model_type = object.parent.tag.replace(_AAS_KEY, "")
+        self._stage = RowPipelineStage.idle
+
+    def _handle_set_submodel_id(self, object: XmlDataObject):
+        self.current_instance.id = object.text
         self._stage = RowPipelineStage.idle
 
     def _handle_flush(self):
