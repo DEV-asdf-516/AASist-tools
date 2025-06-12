@@ -41,6 +41,23 @@
 
 <br>
 
+# Use CLI build
+
+### Requirements
+
+- Python 3.8+ installed
+
+```
+pip install git+https://github.com/DEV-asdf-516/AASist-tools.git
+
+aasist-build <guidance | test | one>
+
+```
+
+- 특정 모듈만 빌드하려면 `guidance`, ` test`, `one` 중 하나를 선택해 실행하세요.
+
+- 별도의 모듈 이름 없이 `aasist-build` 만 실행하는 경우 모든 모듈에 대해 실행파일을 생성합니다.
+
 # TO DO
 
 참조모델 지원 도구 통합 소프트웨어:
