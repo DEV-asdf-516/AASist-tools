@@ -160,9 +160,14 @@ class XmlTableExtractor(SubmodelTableExtractor):
         self.log_handler.add(f"Convert Submodel metadata to {format.name} ...")
         try:
             super().export(format, log_handler=self.log_handler)
+            total_count = len(self._submodel_store)
             self.log_handler.add(
-                f"All Submodels of {self._file_name} have been successfully exported.",
+                f"{self.success_count} of {total_count} Submodels from {self._file_name} exported successfully.",
                 log_level=LogLevel.SUCCESS,
+            )
+            self.log_handler.add(
+                f"{self.failure_count} of {total_count} failed.",
+                log_level=LogLevel.ERROR if self.failure_count > 0 else LogLevel.TRACE,
             )
         except Exception as e:
             traceback.print_exc()
@@ -351,5 +356,6 @@ class XmlTableExtractor(SubmodelTableExtractor):
     ) -> ConceptDescriptionModel | None:
         for i, cd in enumerate(self._cd_store):
             if cd.id_short == id_short and cd.id == semantic_id:
+                # TODO: AAS 여러개일때 definition 추출 안되는 이슈 수정
                 return self._cd_store.pop(i)
         return None

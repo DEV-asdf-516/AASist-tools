@@ -6,8 +6,8 @@ from typing import Dict, Optional, Tuple
 
 class LogLevel(Enum):
     TRACE = ("TRACE", "#000000")
-    INFO = ("INFO", "#00AE09")
-    SUCCESS = ("SUCCESS", "#0055FF")
+    INFO = ("INFO", "#0055FF")
+    SUCCESS = ("SUCCESS", "#00962D")
     WARNING = ("WARNING", "#FF9800")
     ERROR = ("ERROR", "#FD1100")
 

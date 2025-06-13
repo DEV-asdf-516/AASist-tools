@@ -49,6 +49,8 @@ class SubmodelTableExtractor(ABC):
         self.submodels = submodels
         self.columns = columns
         self._file_name = kwargs.get("file_name", None)
+        self.success_count = 0
+        self.failure_count = 0
 
     def export(self, format: TableFormat, **kwargs):
         self._prefix = re.sub(r"\.[^.]*$", "", (self._file_name or "output"))
@@ -115,7 +117,10 @@ class SubmodelTableExtractor(ABC):
                     wb.save(self._prefix + "_" + submodel + ".xlsx")
                     wb.close()
                     os.remove(temp_file_name)
+
+                self.success_count += 1
         except Exception as e:
+            self.failure_count += 1
             log_handler.add(
                 f"Error exporting submodel : {e.__class__}",
                 log_level=LogLevel.ERROR,
