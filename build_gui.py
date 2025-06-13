@@ -26,7 +26,7 @@ class GUIBuilder:
         self.build_path = self.project_root / "build"
         self.package_name = "aasist"
         self.package_folders = ["aasist"]
-        self.package_files = ["aasist/custom_theme.json", "requirements.txt"]
+        self.package_files = ["requirements.txt"]
         self.modules = {
             "guidance": {
                 "entry": "src/gui/aasist_guidance/main.py",

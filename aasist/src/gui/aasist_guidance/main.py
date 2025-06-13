@@ -4,7 +4,7 @@ from aasist.src.gui.aasist_guidance.guidance_screen import GuidanceScreen
 
 
 def main():
-    theme_path = get_resource_path("aasist/custom_theme.json")
+    theme_path = get_resource_path("aasist/config/custom_theme.json")
     ctk.set_default_color_theme(theme_path)
     root = ctk.CTk()
     root.title("AASist Guidance")

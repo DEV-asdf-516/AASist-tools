@@ -17,7 +17,7 @@ setup(
     package_data={
         "": [
             "**/*.py",
-            "**/*.custom_theme.json",
+            "config/*",
             "**/*.ico",
             "requirements.txt",
         ]
