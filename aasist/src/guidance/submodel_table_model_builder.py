@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any
 
-from guidance.submodel_table_parser import ParseObject
+from aasist.src.guidance.submodel_table_parser import ParseObject
 
 
 class ModelBuilder(ABC):

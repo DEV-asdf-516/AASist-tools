@@ -1,23 +1,29 @@
 import logging
-import re
 import traceback
 from types import SimpleNamespace
 from typing import Any, Dict, Iterable, List, Tuple
 
 import pandas as pd
 
-from gui.handler import _GUIDANCE_LOG_NAME, LogLevel, QueueHandler
-from guidance.schema_types import SIMPLE_MODEL_TYPES, ParentElement, TableFormat
-from guidance.submodel_table_extractor import SubmodelTableExtractor
+from aasist.src.gui.handler import _GUIDANCE_LOG_NAME, LogLevel, QueueHandler
+from aasist.src.guidance.schema_types import (
+    SIMPLE_MODEL_TYPES,
+    ParentElement,
+    TableFormat,
+)
+from aasist.src.guidance.submodel_table_extractor import SubmodelTableExtractor
 
-from guidance.submodel_table_parser import ParseObjectIdentifier
-from guidance.xml.xml_object_builder import XmlConceptDescriptionBuilder, XmlRowBuilder
-from guidance.xml.xml_schema_types import XmlTags
-from guidance.xml.xml_table_parser import (
+from aasist.src.guidance.submodel_table_parser import ParseObjectIdentifier
+from aasist.src.guidance.xml.xml_object_builder import (
+    XmlConceptDescriptionBuilder,
+    XmlRowBuilder,
+)
+from aasist.src.guidance.xml.xml_schema_types import XmlTags
+from aasist.src.guidance.xml.xml_table_parser import (
     XmlDataObject,
     XmlTableParser,
 )
-from guidance.submodel_table_model import ConceptDescriptionModel, RowModel
+from aasist.src.guidance.submodel_table_model import ConceptDescriptionModel, RowModel
 
 logger = logging.getLogger(__name__)
 

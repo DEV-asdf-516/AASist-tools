@@ -12,9 +12,9 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL
 import pandas as pd
-from gui.handler import _GUIDANCE_LOG_NAME, LogLevel, QueueHandler
-from guidance.schema_types import TableFormat
-from guidance.submodel_table_parser import ParseObject, SubmodelTableParser
+from aasist.src.gui.handler import _GUIDANCE_LOG_NAME, LogLevel, QueueHandler
+from aasist.src.guidance.schema_types import TableFormat
+from aasist.src.guidance.submodel_table_parser import ParseObject, SubmodelTableParser
 from openpyxl import load_workbook
 
 

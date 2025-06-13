@@ -45,7 +45,7 @@
 
 ### Requirements
 
-- Python 3.8+ installed
+- Python 3.11+ installed
 
 ```
 pip install git+https://github.com/DEV-asdf-516/AASist-tools.git

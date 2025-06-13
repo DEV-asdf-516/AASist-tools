@@ -12,12 +12,12 @@ def load_requirements(filename="requirements.txt"):
 setup(
     name="aasist",
     version="0.0.1",
-    python_requires=">=3.10",
+    python_requires=">=3.11",
     packages=find_packages(),
     package_data={
         "": [
             "**/*.py",
-            "custom_theme.json",
+            "**/*.custom_theme.json",
             "**/*.ico",
             "requirements.txt",
         ]

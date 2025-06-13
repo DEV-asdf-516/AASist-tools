@@ -5,9 +5,9 @@ import re
 from typing import IO, Iterable, Optional, Union
 
 import pyecma376_2
-from guidance.schema_types import AasFileFormat
-from guidance.submodel_table_parser import SubmodelTableParser
-from guidance.xml.xml_table_parser import XmlTableParser
+from aasist.src.guidance.schema_types import AasFileFormat
+from aasist.src.guidance.submodel_table_parser import SubmodelTableParser
+from aasist.src.guidance.xml.xml_table_parser import XmlTableParser
 
 logger = logging.getLogger(__name__)
 

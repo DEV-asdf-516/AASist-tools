@@ -1,6 +1,6 @@
 from typing import IO, List
 
-from guidance.submodel_table_parser import ParseObject, SubmodelTableParser
+from aasist.src.guidance.submodel_table_parser import ParseObject, SubmodelTableParser
 
 
 class JsonObject(ParseObject):

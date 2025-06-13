@@ -1,6 +1,6 @@
 from queue import Empty
 import customtkinter as ctk
-from gui.handler import QueueHandler
+from aasist.src.gui.handler import QueueHandler
 
 
 class LogBox(ctk.CTkFrame):

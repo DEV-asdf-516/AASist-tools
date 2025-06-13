@@ -1,12 +1,12 @@
 import copy
-from guidance.submodel_table_extractor import (
+from aasist.src.guidance.submodel_table_extractor import (
     ConceptDescriptionPipelineStage,
     RowPipelineStage,
 )
-from guidance.submodel_table_model import ConceptDescriptionModel, RowModel
-from guidance.submodel_table_model_builder import ModelBuilder
-from guidance.xml.xml_schema_types import _AAS_KEY, XmlTags
-from guidance.xml.xml_table_parser import XmlDataObject
+from aasist.src.guidance.submodel_table_model import ConceptDescriptionModel, RowModel
+from aasist.src.guidance.submodel_table_model_builder import ModelBuilder
+from aasist.src.guidance.xml.xml_schema_types import _AAS_KEY, XmlTags
+from aasist.src.guidance.xml.xml_table_parser import XmlDataObject
 
 
 ContinueOrBreak = bool

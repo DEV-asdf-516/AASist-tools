@@ -1,26 +1,26 @@
 from typing import Dict, Iterable, List, Tuple
 import customtkinter as ctk
 
-from gui.aasist_guidance.options import (
+from aasist.src.gui.aasist_guidance.options import (
     AttiributeOptions,
     FileFormatToggleButton,
     SettingOptions,
     SubmodelOptions,
 )
-from gui.common.clear_button import ClearButton
-from gui.common.default_button import DefaultButton
-from gui.common.divider import Divider
-from gui.common.file_exporter import FileExporter
-from gui.common.file_selector import FileSelector
-from gui.common.log_box import LogBox
-from gui.handler import _GUIDANCE_LOG_NAME, LogLevel, QueueHandler
-from guidance.aasx_file_reader import AasxFileReader
-from guidance.json.json_table_parser import JsonTableParser
-from guidance.schema_types import TableFormat
-from guidance.submodel_table_parser import SubmodelTableParser
+from aasist.src.gui.common.clear_button import ClearButton
+from aasist.src.gui.common.default_button import DefaultButton
+from aasist.src.gui.common.divider import Divider
+from aasist.src.gui.common.file_exporter import FileExporter
+from aasist.src.gui.common.file_selector import FileSelector
+from aasist.src.gui.common.log_box import LogBox
+from aasist.src.gui.handler import _GUIDANCE_LOG_NAME, LogLevel, QueueHandler
+from aasist.src.guidance.aasx_file_reader import AasxFileReader
+from aasist.src.guidance.json.json_table_parser import JsonTableParser
+from aasist.src.guidance.schema_types import TableFormat
+from aasist.src.guidance.submodel_table_parser import SubmodelTableParser
 
-from guidance.xml.xml_table_extractor import XmlTableExtractor
-from guidance.xml.xml_table_parser import XmlTableParser
+from aasist.src.guidance.xml.xml_table_extractor import XmlTableExtractor
+from aasist.src.guidance.xml.xml_table_parser import XmlTableParser
 
 
 class GuidanceScreen(ctk.CTkFrame):

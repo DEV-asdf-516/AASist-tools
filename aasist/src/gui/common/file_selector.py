@@ -1,4 +1,3 @@
-from logging.handlers import QueueHandler
 import os
 import customtkinter as ctk
 from tkinter import filedialog

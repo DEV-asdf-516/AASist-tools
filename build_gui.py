@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 import shutil
@@ -21,28 +22,26 @@ class GUIBuilder:
             return
 
         self.project_root: Path = Path.cwd()
-        self.dist_path = self.project_root / "AASist"
+        self.dist_path = self.project_root / "AASist Tools"
         self.build_path = self.project_root / "build"
         self.package_name = "aasist"
-
+        self.package_folders = ["aasist"]
+        self.package_files = ["aasist/custom_theme.json", "requirements.txt"]
         self.modules = {
             "guidance": {
-                "entry": "gui/aasist_guidance/main.py",
+                "entry": "src/gui/aasist_guidance/main.py",
                 "name": "AASist_Guidance",
                 "icon": "icons/guidance.ico",
-                "resources": ["custom_theme.json", "icons/guidance.ico"],
             },
             "test": {
-                "entry": "gui/aasist_test/main.py",
+                "entry": "src/gui/aasist_test/main.py",
                 "name": "AASist_Test",
                 "icon": "icons/test.ico",
-                "resources": ["custom_theme.json", "icons/test.ico"],
             },
             "one": {
-                "entry": "gui/aasist_one/main.py",
+                "entry": "src/gui/aasist_one/main.py",
                 "name": "AASist_One",
                 # "icon": "icons/integration.ico",
-                "resources": ["custom_theme.json"],
             },
         }
         self._stages = {
@@ -57,16 +56,13 @@ class GUIBuilder:
 
     def extract_package_files(self):
         try:
-            package_folders = ["gui", "guidance", "tester", "icons", "aasist"]
-            package_files = ["custom_theme.json", "requirements.txt"]
-
-            for folder in package_folders:
+            for folder in self.package_folders:
                 if pkg_resources.resource_exists(self.package_name, folder):
                     target_dir = self.project_root / folder
                     target_dir.mkdir(exist_ok=True)
                     self._extract_folder(folder, target_dir)
 
-            for file in package_files:
+            for file in self.package_files:
                 if pkg_resources.resource_exists(self.package_name, file):
                     self._extract_file(file)
 
@@ -109,30 +105,25 @@ class GUIBuilder:
             spec_file.unlink()
 
     def build_module(self, module_name, config: dict[str, Any]):
+        pkg = pkg_resources.get_distribution(self.package_name)
+        lib_path = Path(pkg.location) / self.package_name
+
+        entry_path = lib_path / config["entry"]
+        work_path = self.build_path / module_name
         cmd = [
             "pyinstaller",
             "--onefile",
             "--windowed",
             f"--name={config['name']}",
             f"--distpath={self.dist_path}",
-            f"--workpath={self.build_path}/{module_name}",
+            f"--workpath={str(work_path)}",
             "--clean",
         ]
 
         if config.get("icon") and Path(config["icon"]).exists():
-            cmd.extend(["--icon", config["icon"]])
+            cmd.extend(["--icon", lib_path / config["icon"]])
 
-        for resource in config.get("resources", []):
-            if not Path(resource).exists():
-                continue
-            if Path(resource).is_dir():
-                cmd.extend(["--add-data", f"{resource};{resource}"])
-            elif Path(resource).is_file():
-                parent_dir = Path(resource).parent
-                if str(parent_dir) == ".":
-                    cmd.extend(["--add-data", f"{resource};."])
-                else:
-                    cmd.extend(["--add-data", f"{resource};{parent_dir}/"])
+        cmd.extend(["--collect-all", self.package_name])
 
         hidden_imports = [
             "customtkinter",
@@ -146,8 +137,7 @@ class GUIBuilder:
         for lib in hidden_imports:
             cmd.extend(["--hidden-import", lib])
 
-        cmd.extend(["--paths", str(self.project_root)])
-        cmd.append(config["entry"])
+        cmd.append(entry_path)
 
         try:
             process = subprocess.Popen(
@@ -164,11 +154,11 @@ class GUIBuilder:
 
     def build_all(self):
         self.extract_package_files()
-        self.clean_build_folders()
         self.dist_path.mkdir(exist_ok=True)
         for module_name, config in self.modules.items():
             self.build_module(module_name, config)
         self._list_exe_files()
+        self.clean_build_folders()
 
     def _list_exe_files(self):
         for exe_file in self.dist_path.glob("*.exe"):
@@ -229,6 +219,7 @@ def main():
             builder.extract_package_files()
             builder.dist_path.mkdir(exist_ok=True)
             builder.build_module(module_name, builder.modules[module_name])
+            builder.clean_build_folders()
         else:
             print(f"사용 가능한 모듈: {', '.join(builder.modules.keys())}")
     else:
