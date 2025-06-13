@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from build_gui import get_resource_path
+from util import get_resource_path
 from gui.aasist_test.test_screen import TestScreen
 
 

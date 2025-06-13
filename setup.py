@@ -10,10 +10,19 @@ def load_requirements(filename="requirements.txt"):
 
 
 setup(
-    name="aasist_gui",
+    name="aasist",
     version="0.0.1",
     python_requires=">=3.10",
     packages=find_packages(),
+    package_data={
+        "": [
+            "**/*.py",
+            "custom_theme.json",
+            "**/*.ico",
+            "requirements.txt",
+        ]
+    },
+    include_package_data=True,
     py_modules=["build_gui"],
     install_requires=load_requirements(),
     entry_points={"console_scripts": ["aasist-build = build_gui:main"]},
