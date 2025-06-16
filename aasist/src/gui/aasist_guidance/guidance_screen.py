@@ -17,6 +17,7 @@ from aasist.src.gui.handler import _GUIDANCE_LOG_NAME, LogLevel, QueueHandler
 from aasist.src.guidance.aasx_file_reader import AasxFileReader
 from aasist.src.guidance.json.json_table_parser import JsonTableParser
 from aasist.src.guidance.schema_types import TableFormat
+from aasist.src.guidance.submodel_table_extractor import DefaultSubmodel
 from aasist.src.guidance.submodel_table_parser import SubmodelTableParser
 
 from aasist.src.guidance.xml.xml_table_extractor import XmlTableExtractor
@@ -28,14 +29,16 @@ class GuidanceScreen(ctk.CTkFrame):
         "word": True,
         "excel": False,
         "all_submodels": True,
-        "identification": True,
-        "documentation": True,
-        "cad": True,
-        "carbon_footprint": True,
-        "hierarchical_structures": True,
-        "digital_nameplate": True,
-        "technical_data": True,
-        "operational_data": True,
+        DefaultSubmodel.Identification.value: True,
+        DefaultSubmodel.Documentation.value: True,
+        DefaultSubmodel.HandoverDocumentation.value: True,
+        DefaultSubmodel.CAD.value: True,
+        DefaultSubmodel.CarbonFootprint.value: True,
+        DefaultSubmodel.HierarchicalStructures.value: True,
+        DefaultSubmodel.DigitalNameplate.value: True,
+        DefaultSubmodel.Nameplate.value: True,
+        DefaultSubmodel.TechnicalData.value: True,
+        DefaultSubmodel.OperationalData.value: True,
         "etc": True,
         "all_attributes": False,
         "model_type": True,

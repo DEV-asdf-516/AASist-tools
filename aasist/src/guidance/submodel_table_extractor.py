@@ -35,6 +35,27 @@ class ConceptDescriptionPipelineStage(Enum):
     flush = auto()
 
 
+class DefaultSubmodel(Enum):
+    Identification = "identification"
+    Documentation = "documentation"
+    HandoverDocumentation = "handover_documentation"
+    CAD = "cad"
+    CarbonFootprint = "carbon_footprint"
+    HierarchicalStructures = "hierarchical_structures"
+    DigitalNameplate = "digital_nameplate"
+    Nameplate = "nameplate"
+    TechnicalData = "technical_data"
+    OperationalData = "operational_data"
+
+    @classmethod
+    def is_default(cls, value: str) -> bool:
+        return any(value in submodel.name for submodel in DefaultSubmodel)
+
+    @classmethod
+    def reversed(cls, submodel: "DefaultSubmodel") -> Tuple[str, str]:
+        return (submodel.value, submodel.name)
+
+
 class SubmodelTableExtractor(ABC):
 
     def __init__(

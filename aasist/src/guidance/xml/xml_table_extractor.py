@@ -11,7 +11,10 @@ from aasist.src.guidance.schema_types import (
     ParentElement,
     TableFormat,
 )
-from aasist.src.guidance.submodel_table_extractor import SubmodelTableExtractor
+from aasist.src.guidance.submodel_table_extractor import (
+    DefaultSubmodel,
+    SubmodelTableExtractor,
+)
 
 from aasist.src.guidance.submodel_table_parser import ParseObjectIdentifier
 from aasist.src.guidance.xml.xml_object_builder import (
@@ -81,7 +84,9 @@ class XmlTableExtractor(SubmodelTableExtractor):
                     is_sub_matched,
                     all_submodels,
                     not self.submodels,  # 아무것도 선택하지 않았다면 전부 추출
-                    (not is_sub_matched and etc_submodels),
+                    not is_sub_matched
+                    and etc_submodels
+                    and not DefaultSubmodel.is_default(parent),
                 ]
             ):
                 if shell is None:

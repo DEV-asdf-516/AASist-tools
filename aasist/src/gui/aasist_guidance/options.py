@@ -1,6 +1,8 @@
 from typing import Callable, Dict
 import customtkinter as ctk
 
+from aasist.src.guidance.submodel_table_extractor import DefaultSubmodel
+
 
 # 토글버튼
 class FileFormatToggleButton(ctk.CTkFrame):
@@ -51,14 +53,14 @@ class SubmodelOptions(ctk.CTkFrame):
 
         self.submodel_options = [
             ("all_submodels", "All"),
-            ("identification", "Identification"),
-            ("documentation", "Documentation"),
-            ("cad", "CAD"),
-            ("carbon_footprint", "CarbonFootprint"),
-            ("hierarchical_structures", "HierarchicalStructures"),
-            ("digital_nameplate", "DigitalNameplate"),
-            ("technical_data", "TechnicalData"),
-            ("operational_data", "OperationalData"),
+            DefaultSubmodel.reversed(DefaultSubmodel.Identification),
+            DefaultSubmodel.reversed(DefaultSubmodel.Documentation),
+            DefaultSubmodel.reversed(DefaultSubmodel.CAD),
+            DefaultSubmodel.reversed(DefaultSubmodel.CarbonFootprint),
+            DefaultSubmodel.reversed(DefaultSubmodel.HierarchicalStructures),
+            DefaultSubmodel.reversed(DefaultSubmodel.DigitalNameplate),
+            DefaultSubmodel.reversed(DefaultSubmodel.TechnicalData),
+            DefaultSubmodel.reversed(DefaultSubmodel.OperationalData),
             ("etc", "기타"),
         ]
         self.copy_chosen_options: Dict[str, ctk.BooleanVar] = {
@@ -86,6 +88,14 @@ class SubmodelOptions(ctk.CTkFrame):
             check_box.grid(row=row_pos, column=col_pos, sticky=ctk.W, padx=12, pady=8)
 
     def _select_checkbox(self, option: str):
+        if option == DefaultSubmodel.Documentation.value:
+            self.copy_chosen_options[DefaultSubmodel.HandoverDocumentation.value] = (
+                ctk.BooleanVar(self, value=self.copy_chosen_options[option].get())
+            )
+        if option == DefaultSubmodel.Nameplate.value:
+            self.copy_chosen_options[DefaultSubmodel.DigitalNameplate.value] = (
+                ctk.BooleanVar(self, value=self.copy_chosen_options[option].get())
+            )
         if option == "all_submodels":
             [
                 self.copy_chosen_options[k].set(self.copy_chosen_options[option].get())
@@ -94,6 +104,7 @@ class SubmodelOptions(ctk.CTkFrame):
             ]
         elif self.copy_chosen_options["all_submodels"].get():
             self.copy_chosen_options["all_submodels"].set(False)
+
         self._callback()
 
     def init_checkboxes(self):
