@@ -23,7 +23,9 @@ setup(
         ]
     },
     include_package_data=True,
-    py_modules=["build_gui"],
+    py_modules=["build_gui", "run"],
     install_requires=load_requirements(),
-    entry_points={"console_scripts": ["aasist-build = build_gui:main"]},
+    entry_points={
+        "console_scripts": ["aasist-build = build_gui:main", "aasist-run = run:main"]
+    },
 )

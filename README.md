@@ -57,6 +57,16 @@ aasist-build <guidance | test | one>
 
 - 별도의 모듈 이름 없이 `aasist-build` 만 실행하는 경우 모든 모듈에 대해 실행파일을 생성합니다.
 
+### Quick start
+
+```
+pip install git+https://github.com/DEV-asdf-516/AASist-tools.git
+
+aasist-run <guidance | test | one>
+```
+
+- `.exe` 파일 생성 없이 곧바로 GUI 프로그램을 실행합니다.
+
 <br>
 
 # TO DO
