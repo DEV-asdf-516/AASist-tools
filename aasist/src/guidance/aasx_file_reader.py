@@ -28,24 +28,20 @@ class AasxFileReader:
     ) -> Optional[Iterable[SubmodelTableParser]]:
         parsers = []
         rel = self.zip_reader.get_related_parts_by_type()
-
         aasx_origin = rel[self.AASX_ORIGIN_KEY]
 
         if not aasx_origin:
             raise ValueError(f"no aasx origin found in {self._file}")
 
         aas = aasx_origin[0]
-
         aas_specs = self.zip_reader.get_related_parts_by_type(aas)[self.AAS_SPEC_KEY]
 
         if not aas_specs:
             raise ValueError(f"no aas spec found in {aas}")
 
         aas_specs = set(aas_specs)
-
         for aas_part in aas_specs:
             parsers.append(self._parse_aas_part(aas_part))
-
             for split_part in self.zip_reader.get_related_parts_by_type(aas_part)[
                 self.AAS_SPEC_SPLIT_KEY
             ]:

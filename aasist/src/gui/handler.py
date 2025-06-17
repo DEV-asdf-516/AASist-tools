@@ -17,6 +17,7 @@ class LogLevel(Enum):
 
 
 _GUIDANCE_LOG_NAME = "GUIDANCE_OUTPUT"
+_TEST_LOG_NAME = "TEST_OUTPUT"
 
 
 class QueueHandler:

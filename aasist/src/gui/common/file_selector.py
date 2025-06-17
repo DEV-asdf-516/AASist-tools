@@ -48,6 +48,7 @@ class FileSelector(ctk.CTkFrame):
         self.file_display.grid(row=0, column=1, sticky=ctk.EW, padx=8)
         self.file_display.configure(state=ctk.NORMAL)
         self.file_display.delete("1.0", ctk.END)
+        self.file_display.configure(text_color="gray")
         self.file_display.insert("1.0", "Select AASX files...")
         self.file_display.configure(state=ctk.DISABLED)
 
@@ -59,11 +60,13 @@ class FileSelector(ctk.CTkFrame):
         if files:
             self.file_paths = list(files)
             display_text = ", ".join([os.path.basename(f) for f in files])
+            self.file_display.configure(text_color="black")
             self.file_display.delete("1.0", ctk.END)
             self.file_display.insert("1.0", display_text)
             self.on_selected(self.file_paths)
         else:
             self.file_display.delete("1.0", ctk.END)
+            self.file_display.configure(text_color="gray")
             self.file_display.insert("1.0", "Select AASX files...")
 
         self.file_display.configure(state=ctk.DISABLED)

@@ -182,7 +182,6 @@ class AttiributeOptions(ctk.CTkFrame):
     def init_checkboxes(self):
         for key, var in self.copy_chosen_options.items():
             var.set(self.default_options[key])
-
         self._callback()
 
     def _callback(self):
