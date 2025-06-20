@@ -14,14 +14,14 @@ from aasist.src.gui.common.file_exporter import FileExporter
 from aasist.src.gui.common.file_selector import FileSelector
 from aasist.src.gui.common.log_box import LogBox
 from aasist.src.gui.handler import _GUIDANCE_LOG_NAME, LogLevel, QueueHandler
-from aasist.src.guidance.aasx_file_reader import AasxFileReader
-from aasist.src.guidance.json.json_table_parser import JsonTableParser
-from aasist.src.guidance.schema_types import TableFormat
-from aasist.src.guidance.submodel_table_extractor import DefaultSubmodel
-from aasist.src.guidance.submodel_table_parser import SubmodelTableParser
+from aasist.src.module.guidance.aasx_file_reader import AasxFileReader
+from aasist.src.module.guidance.json.json_table_parser import JsonTableParser
+from aasist.src.module.guidance.schema_types import TableFormat
+from aasist.src.module.guidance.submodel_table_extractor import DefaultSubmodel
+from aasist.src.module.guidance.submodel_table_parser import SubmodelTableParser
 
-from aasist.src.guidance.xml.xml_table_extractor import XmlTableExtractor
-from aasist.src.guidance.xml.xml_table_parser import XmlTableParser
+from aasist.src.module.guidance.xml.xml_table_extractor import XmlTableExtractor
+from aasist.src.module.guidance.xml.xml_table_parser import XmlTableParser
 
 
 class GuidanceScreen(ctk.CTkFrame):
@@ -66,9 +66,10 @@ class GuidanceScreen(ctk.CTkFrame):
         self.layout()
 
     def layout(self):
-
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=0)
+        self.grid_rowconfigure(1, weight=0)
+        self.grid_rowconfigure(2, weight=1)
 
         browse_frame = ctk.CTkFrame(
             self, fg_color=self.theme_data["CTkFrame"]["fg_color"]
@@ -92,7 +93,7 @@ class GuidanceScreen(ctk.CTkFrame):
             self, fg_color=self.theme_data["CTkFrame"]["fg_color"]
         )
         content_frame.grid(row=2, column=0, sticky=ctk.NSEW, pady=(0, 8))
-        content_frame.grid_columnconfigure(0, weight=1)
+        content_frame.grid_columnconfigure(0, weight=0)
         content_frame.grid_columnconfigure(1, weight=2)
         content_frame.grid_rowconfigure(0, weight=1)
 
@@ -236,11 +237,19 @@ class GuidanceScreen(ctk.CTkFrame):
     def output_panel(self, parent: ctk.CTkFrame):
         parent.grid_columnconfigure(0, weight=1)
         parent.grid_rowconfigure(1, weight=1)
+
         header_frame = ctk.CTkFrame(
             parent, fg_color=self.theme_data["CTkFrame"]["fg_color"]
         )
         header_frame.grid(row=0, column=0, sticky=ctk.EW, pady=(16, 8))
         header_frame.grid_columnconfigure(0, weight=1)
+
+        body_frame = ctk.CTkFrame(
+            parent, fg_color=self.theme_data["CTkFrame"]["fg_color"]
+        )
+        body_frame.grid(row=1, column=0, sticky=ctk.NSEW)
+        body_frame.grid_columnconfigure(0, weight=1)
+        body_frame.grid_rowconfigure(0, weight=1)
 
         # Title section
         title_label = ctk.CTkLabel(
@@ -253,17 +262,18 @@ class GuidanceScreen(ctk.CTkFrame):
 
         # output box section
         self.output_box = LogBox(
-            parent,
+            body_frame,
             log_queue=self.log_handler,
             bg_color=self.theme_data["CTkFrame"]["fg_color"],
+            width=720,
         )
-        self.output_box.grid(row=1, column=0, sticky=ctk.NSEW, padx=8, pady=8)
+        self.output_box.grid(row=0, column=0, sticky=ctk.NSEW, padx=8, pady=8)
 
         # button section
         buttons_frame = ctk.CTkFrame(
-            parent, fg_color=self.theme_data["CTkFrame"]["fg_color"]
+            body_frame, fg_color=self.theme_data["CTkFrame"]["fg_color"]
         )
-        buttons_frame.grid(row=1, column=1, sticky=ctk.NE, pady=(0, 8), padx=(4, 0))
+        buttons_frame.grid(row=0, column=1, sticky=ctk.NE, pady=(0, 8), padx=(4, 0))
 
         self.file_exporter = FileExporter(
             buttons_frame,
@@ -304,8 +314,15 @@ class GuidanceScreen(ctk.CTkFrame):
     def handle_file_selected(self, file_paths: List[str]):
         self._readers.clear()
         self.loaded_files = file_paths
+
         for file in file_paths:
-            self._readers.append((file, AasxFileReader(file)))
+            try:
+                self._readers.append((file, AasxFileReader(file)))
+            except Exception as e:
+                self.log_handler.add(
+                    f"Error loading file: {file} {e}",
+                    log_level=LogLevel.ERROR,
+                )
 
     def handle_export_created_files(self, **kwargs):
         columns: List[str] = kwargs.get("columns", None)

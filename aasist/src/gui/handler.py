@@ -17,6 +17,7 @@ class LogLevel(Enum):
 
 
 _GUIDANCE_LOG_NAME = "GUIDANCE_OUTPUT"
+_RESULT_LOG_NAME = "TEST_RESULT_OUTPUT"
 _TEST_LOG_NAME = "TEST_OUTPUT"
 
 
@@ -25,7 +26,7 @@ class QueueHandler:
     _instances: Dict[str, "QueueHandler"] = {}
     _lock = threading.Lock()
 
-    def __new__(cls, key: str, log_queue: Queue = Queue()):
+    def __new__(cls, key: str, log_queue: Queue = None):
         with cls._lock:
             if key not in cls._instances:
                 instance = super().__new__(cls)
@@ -33,10 +34,10 @@ class QueueHandler:
                 instance._initialized = False
             return cls._instances[key]
 
-    def __init__(self, key: str, log_queue: Queue = Queue()):
+    def __init__(self, key: str, log_queue: Queue = None):
         if not self._initialized:
             self.key = key
-            self.log_queue = log_queue
+            self.log_queue = log_queue if log_queue is not None else Queue()
             self._initialized = True
 
     def _init_instance(self, log_queue: Queue):

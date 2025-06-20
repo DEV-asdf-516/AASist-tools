@@ -1,7 +1,7 @@
 import os
 import customtkinter as ctk
 from tkinter import filedialog
-from typing import Callable, List
+from typing import Callable, Iterable, List
 
 
 class FileSelector(ctk.CTkFrame):
@@ -9,7 +9,7 @@ class FileSelector(ctk.CTkFrame):
         self,
         parent: ctk.CTkFrame,
         on_files_selected: Callable[[List[str]], None],
-        file_types=None,
+        file_types: Iterable = None,
         bg_color: str = "#F2F2F2",
     ):
         super().__init__(parent, fg_color=bg_color)

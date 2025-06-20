@@ -13,8 +13,11 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL
 import pandas as pd
 from aasist.src.gui.handler import _GUIDANCE_LOG_NAME, LogLevel, QueueHandler
-from aasist.src.guidance.schema_types import TableFormat
-from aasist.src.guidance.submodel_table_parser import ParseObject, SubmodelTableParser
+from aasist.src.module.guidance.schema_types import TableFormat
+from aasist.src.module.guidance.submodel_table_parser import (
+    ParseObject,
+    SubmodelTableParser,
+)
 from openpyxl import load_workbook
 
 
@@ -143,7 +146,7 @@ class SubmodelTableExtractor(ABC):
         except Exception as e:
             self.failure_count += 1
             log_handler.add(
-                f"Error exporting submodel : {e.__class__}",
+                f"Error exporting submodel : {e}",
                 log_level=LogLevel.ERROR,
             )
 

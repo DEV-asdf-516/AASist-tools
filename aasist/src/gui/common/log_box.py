@@ -57,7 +57,7 @@ class LogBox(ctk.CTkFrame):
     def _remove_old_logs(self):
         old_lines = self.MAX_LOG_LINE // 4
         self.output_box.configure(state=ctk.NORMAL)
-        for i in range(old_lines):
+        for _ in range(old_lines):
             self.output_box.delete("1.0", "2.0")
         self.output_box.configure(state=ctk.DISABLED)
 

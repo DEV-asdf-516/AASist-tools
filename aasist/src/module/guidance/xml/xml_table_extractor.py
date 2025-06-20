@@ -6,27 +6,30 @@ from typing import Any, Dict, Iterable, List, Tuple
 import pandas as pd
 
 from aasist.src.gui.handler import _GUIDANCE_LOG_NAME, LogLevel, QueueHandler
-from aasist.src.guidance.schema_types import (
+from aasist.src.module.guidance.schema_types import (
     SIMPLE_MODEL_TYPES,
     ParentElement,
     TableFormat,
 )
-from aasist.src.guidance.submodel_table_extractor import (
+from aasist.src.module.guidance.submodel_table_extractor import (
     DefaultSubmodel,
     SubmodelTableExtractor,
 )
 
-from aasist.src.guidance.submodel_table_parser import ParseObjectIdentifier
-from aasist.src.guidance.xml.xml_object_builder import (
+from aasist.src.module.guidance.submodel_table_parser import ParseObjectIdentifier
+from aasist.src.module.guidance.xml.xml_object_builder import (
     XmlConceptDescriptionBuilder,
     XmlRowBuilder,
 )
-from aasist.src.guidance.xml.xml_schema_types import XmlTags
-from aasist.src.guidance.xml.xml_table_parser import (
+from aasist.src.module.guidance.xml.xml_schema_types import XmlTags
+from aasist.src.module.guidance.xml.xml_table_parser import (
     XmlDataObject,
     XmlTableParser,
 )
-from aasist.src.guidance.submodel_table_model import ConceptDescriptionModel, RowModel
+from aasist.src.module.guidance.submodel_table_model import (
+    ConceptDescriptionModel,
+    RowModel,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +65,8 @@ class XmlTableExtractor(SubmodelTableExtractor):
         }
         self._cd_store: List[ConceptDescriptionModel] = []
         self.log_handler = QueueHandler(_GUIDANCE_LOG_NAME)
-        self.use_simple_model_type = kwargs.get("use_simple_model_type")
-        self.hide_depth_attributes = kwargs.get("hide_depth_attributes")
+        self.use_simple_model_type: bool = kwargs.get("use_simple_model_type")
+        self.hide_depth_attributes: bool = kwargs.get("hide_depth_attributes")
 
     def extract_table(self):
         self._assemble_concept_descriptions(

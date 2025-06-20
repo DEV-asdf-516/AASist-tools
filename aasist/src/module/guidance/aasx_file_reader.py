@@ -5,9 +5,9 @@ import re
 from typing import IO, Iterable, Optional, Union
 
 import pyecma376_2
-from aasist.src.guidance.schema_types import AasFileFormat
-from aasist.src.guidance.submodel_table_parser import SubmodelTableParser
-from aasist.src.guidance.xml.xml_table_parser import XmlTableParser
+from aasist.src.module.format import AasFileFormat
+from aasist.src.module.guidance.submodel_table_parser import SubmodelTableParser
+from aasist.src.module.guidance.xml.xml_table_parser import XmlTableParser
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class AasxFileReader:
         extension = re.sub(r".*\.", "", aas_part_name)
 
         if not content_type.startswith(("application/", "text/")):
-            logger.debug(f"not support for this content type: {content_type}")
+            TypeError(f"not support for this content type: {content_type}")
             return
 
         if extension == AasFileFormat.XML.value:

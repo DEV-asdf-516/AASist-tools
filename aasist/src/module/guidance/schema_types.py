@@ -1,15 +1,9 @@
-from enum import Enum, auto
+from enum import Enum
 
 
 class TableFormat(Enum):
     XLSX = ".xlsx"
     DOCX = ".docx"
-
-
-class AasFileFormat(Enum):
-    JSON = "json"
-    XML = "xml"
-    AASX = "aasx"
 
 
 class ParentElement(Enum):

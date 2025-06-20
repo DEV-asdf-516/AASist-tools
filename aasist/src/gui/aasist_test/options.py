@@ -1,5 +1,48 @@
-from typing import Callable, Dict
+import threading
+from typing import Any, Callable, Dict
 import customtkinter as ctk
+
+from aasist.src.module.tester.option_type import IDTA, KOSMO
+
+
+class TestExecuteButton(ctk.CTkFrame):
+    def __init__(
+        self,
+        parent: ctk.CTkFrame,
+        on_test: Callable,
+        bg_color: str = "#F2F2F2",
+        **kwargs
+    ):
+        super().__init__(parent, fg_color=bg_color)
+
+        self.on_test = on_test
+        self.stop_event = threading.Event()
+        self.is_processing = False
+
+        run_button = ctk.CTkButton(
+            self,
+            text="Run Test",
+            command=lambda: self.start(**kwargs),
+            width=160,
+            font=ctk.CTkFont(size=18, weight="normal"),
+        )
+        run_button.grid(row=0, column=0, pady=(0, 4), ipady=8, sticky=ctk.E)
+
+    def run_test(self, **kwargs: Any):
+        self.on_test(**kwargs)
+        self.is_processing = False
+
+    def start(self, **kwargs: Any):
+        if self.is_processing:
+            return
+        self.is_processing = True
+        self.stop_event.clear()
+        self.thread = threading.Thread(target=self.run_test, args=(kwargs), daemon=True)
+        self.thread.start()
+
+    def stop(self):
+        self.stop_event.set()
+        self.is_processing = False
 
 
 class UrlInputForm(ctk.CTkFrame):
@@ -72,8 +115,8 @@ class IdtaOptions(ctk.CTkFrame):
         self.on_check = on_check
         self.default_options = default_options
         self.idta_options = [
-            ("standard", "표준 검사"),
-            ("ignore_optional_constraints", "권장 제약 조건 무시"),
+            (IDTA.standard.name, "표준 검사"),
+            (IDTA.optional.name, "권장 제약 조건 무시"),
         ]
         self.copy_chosen_options: Dict[str, ctk.BooleanVar] = {
             key: ctk.BooleanVar(self, value=value)
@@ -88,32 +131,32 @@ class IdtaOptions(ctk.CTkFrame):
         idta_standard = ctk.CTkCheckBox(
             self,
             text=self.idta_options[STANDARD_INDEX][-1],
-            variable=self.copy_chosen_options["standard"],
+            variable=self.copy_chosen_options[IDTA.standard.name],
             command=self._callback,
             font=ctk.CTkFont(size=16),
             width=16,
             height=16,
         )
-        idta_standard.grid(row=0, column=0, sticky=ctk.W, padx=12, pady=(8, 0))
+        idta_standard.grid(row=0, column=0, sticky=ctk.W, padx=12, pady=(4, 0))
         idta_standard_desc = ctk.CTkLabel(
             self,
             text="IDTA 표준에 따른 참조모델의 제약조건을 검사합니다",
             font=ctk.CTkFont(size=14),
             text_color="#9C9C9C",
         )
-        idta_standard_desc.grid(row=1, column=0, sticky=ctk.W, ipadx=44, pady=(0, 8))
+        idta_standard_desc.grid(row=1, column=0, sticky=ctk.W, ipadx=40, pady=(0, 4))
 
         ignore_optional_constraints = ctk.CTkCheckBox(
             self,
             text=self.idta_options[IGNORE_OPTIONAL_INDEX][-1],
-            variable=self.copy_chosen_options["ignore_optional_constraints"],
+            variable=self.copy_chosen_options[IDTA.optional.name],
             command=self._callback,
             font=ctk.CTkFont(size=16),
             width=16,
             height=16,
         )
         ignore_optional_constraints.grid(
-            row=2, column=0, sticky=ctk.W, padx=12, pady=(8, 0)
+            row=2, column=0, sticky=ctk.W, padx=12, pady=(4, 0)
         )
         ignore_optional_constraints_desc = ctk.CTkLabel(
             self,
@@ -122,7 +165,7 @@ class IdtaOptions(ctk.CTkFrame):
             text_color="#9C9C9C",
         )
         ignore_optional_constraints_desc.grid(
-            row=3, column=0, sticky=ctk.W, ipadx=44, pady=(0, 8)
+            row=3, column=0, sticky=ctk.W, ipadx=40, pady=(0, 4)
         )
 
     def init_checkboxes(self):
@@ -148,25 +191,31 @@ class KosmoOptions(ctk.CTkFrame):
         self.on_check = on_check
         self.default_options = default_options
         self.idta_options = [
-            ("check_id_short", "idShort 설정/명명 규칙 검사"),
-            ("check_IRDI_or_IRI", "IRDI/IRI 형식 검사"),
-            ("check_sumbodel_component", "Submodel 구성 검사"),
-            ("check_cd_rules", "Concept Description 규칙 검사"),
-            ("check_kind_type", "Kind 유형 검사"),
-            ("check_thumbnail", "Thumbnail 이미지 확인"),
-            ("checl_exist_value", "Value 값 존재 여부 확인"),
-            ("check_cd_mapping", "Concept Description Mapping 확인"),
+            (KOSMO.id_short_rule.name, "idShort 설정/명명 규칙 검사"),
+            (KOSMO.id_rule.name, "IRDI/IRI 형식 검사"),
+            (KOSMO.submodel_rule.name, "Submodel 구성 검사"),
+            (KOSMO.concept_description_rule.name, "Concept Description 규칙 검사"),
+            (KOSMO.kind_rule.name, "Kind 유형 검사"),
+            (KOSMO.thumbnail_rule.name, "Thumbnail 이미지 확인"),
+            (KOSMO.value_rule.name, "Value 값 존재 여부 확인"),
+            (
+                KOSMO.submodel_element_collection_rule,
+                "Concept Description Mapping 확인",
+            ),
         ]
         self._sub_description = [
-            ("check_id_short", "idShort가 대문자로 시작하는지 검사합니다"),
-            ("check_IRDI_or_IRI", "Id가 IRDI/IRI 형식을 준수하는지 검사합니다"),
-            ("check_sumbodel_component", "필수 Submodel 4종을 포함하는지 검사합니다"),
-            ("check_cd_rules", "Concept Description 관련 규칙을 검사합니다"),
-            ("check_kind_type", "Kind 유형이 올바르게 설정되었는지 검사합니다"),
-            ("check_thumbnail", "Thumbnail 이미지가 존재하는지 검사합니다"),
-            ("checl_exist_value", "Property의 Value가 빈 값인지 확인합니다"),
+            (KOSMO.id_short_rule.name, "idShort가 대문자로 시작하는지 검사합니다"),
+            (KOSMO.id_rule.name, "Id가 IRDI/IRI 형식을 준수하는지 검사합니다"),
+            (KOSMO.submodel_rule.name, "필수 Submodel 4종을 포함하는지 검사합니다"),
             (
-                "check_cd_mapping",
+                KOSMO.concept_description_rule.name,
+                "Concept Description 관련 규칙을 검사합니다",
+            ),
+            (KOSMO.kind_rule.name, "Kind 유형이 올바르게 설정되었는지 검사합니다"),
+            (KOSMO.thumbnail_rule.name, "Thumbnail 이미지가 존재하는지 검사합니다"),
+            (KOSMO.value_rule.name, "Property의 Value가 빈 값인지 확인합니다"),
+            (
+                KOSMO.submodel_element_collection_rule,
                 "SubmodelElementCollection과 ConceptDescription의 매핑 여부를 확인합니다",
             ),
         ]
@@ -192,7 +241,7 @@ class KosmoOptions(ctk.CTkFrame):
                 width=16,
                 height=16,
             )
-            check_box.grid(row=check_row, column=0, sticky=ctk.W, padx=12, pady=(8, 0))
+            check_box.grid(row=check_row, column=0, sticky=ctk.W, padx=12, pady=(4, 0))
 
             description = ctk.CTkLabel(
                 self,
@@ -202,7 +251,7 @@ class KosmoOptions(ctk.CTkFrame):
             )
             desc_row = check_row + 1
             description.grid(
-                row=desc_row, column=0, sticky=ctk.W, ipadx=44, pady=(0, 8)
+                row=desc_row, column=0, sticky=ctk.W, ipadx=40, pady=(0, 4)
             )
 
     def init_checkboxes(self):

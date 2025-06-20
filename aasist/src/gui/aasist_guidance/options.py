@@ -1,7 +1,7 @@
 from typing import Callable, Dict
 import customtkinter as ctk
 
-from aasist.src.guidance.submodel_table_extractor import DefaultSubmodel
+from aasist.src.module.guidance.submodel_table_extractor import DefaultSubmodel
 
 
 # 토글버튼

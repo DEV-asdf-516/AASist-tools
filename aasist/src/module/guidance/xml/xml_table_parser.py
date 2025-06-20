@@ -3,12 +3,12 @@ import logging
 from typing import IO, Any, Callable, Dict, Iterable, List, Optional, Tuple
 from lxml import etree
 from aasist.src.gui.handler import _GUIDANCE_LOG_NAME, QueueHandler
-from aasist.src.guidance.submodel_table_parser import (
+from aasist.src.module.guidance.submodel_table_parser import (
     ParseObject,
     ParseObjectIdentifier,
     SubmodelTableParser,
 )
-from aasist.src.guidance.xml.xml_schema_types import _AAS_KEY, XmlTags
+from aasist.src.module.guidance.xml.xml_schema_types import _AAS_KEY, XmlTags
 
 
 logger = logging.getLogger(__name__)

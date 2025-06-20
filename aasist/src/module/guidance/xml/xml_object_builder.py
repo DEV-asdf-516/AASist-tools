@@ -1,12 +1,15 @@
 import copy
-from aasist.src.guidance.submodel_table_extractor import (
+from aasist.src.module.guidance.submodel_table_extractor import (
     ConceptDescriptionPipelineStage,
     RowPipelineStage,
 )
-from aasist.src.guidance.submodel_table_model import ConceptDescriptionModel, RowModel
-from aasist.src.guidance.submodel_table_model_builder import ModelBuilder
-from aasist.src.guidance.xml.xml_schema_types import _AAS_KEY, XmlTags
-from aasist.src.guidance.xml.xml_table_parser import XmlDataObject
+from aasist.src.module.guidance.submodel_table_model import (
+    ConceptDescriptionModel,
+    RowModel,
+)
+from aasist.src.module.guidance.submodel_table_model_builder import ModelBuilder
+from aasist.src.module.guidance.xml.xml_schema_types import _AAS_KEY, XmlTags
+from aasist.src.module.guidance.xml.xml_table_parser import XmlDataObject
 
 
 ContinueOrBreak = bool
@@ -89,7 +92,7 @@ class XmlRowBuilder(ModelBuilder):
             self._stage = RowPipelineStage.set_submodel_id
             return continue_
 
-        # flow description or value
+        # flow description or MLP value
         if (
             XmlTags.is_match(object.tag, XmlTags.LANG_STRING_TEXT_TYPE)
             and self.current_instance.model_type
@@ -104,7 +107,7 @@ class XmlRowBuilder(ModelBuilder):
                 self._stage = RowPipelineStage.set_description
             return break_
 
-        # flow semantic id or value
+        # flow semanticID or value
         if object.parent.tag == _AAS_KEY + self.current_instance.model_type:
             if XmlTags.is_match(object.tag, XmlTags.SEMANTIC_ID):
                 self._stage = RowPipelineStage.set_semantic_id

@@ -1,32 +1,41 @@
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 import customtkinter as ctk
 
-from aasist.src.gui.aasist_test.options import IdtaOptions, KosmoOptions, UrlInputForm
+from aasist.src.gui.aasist_test.options import (
+    IdtaOptions,
+    KosmoOptions,
+    TestExecuteButton,
+    UrlInputForm,
+)
 from aasist.src.gui.common.clear_button import ClearButton
 from aasist.src.gui.common.default_button import DefaultButton
 from aasist.src.gui.common.divider import Divider
 from aasist.src.gui.common.file_exporter import FileExporter
 from aasist.src.gui.common.file_selector import FileSelector
 from aasist.src.gui.common.log_box import LogBox
-from aasist.src.gui.handler import _TEST_LOG_NAME, QueueHandler
+from aasist.src.gui.handler import _TEST_LOG_NAME, LogLevel, QueueHandler
+from aasist.src.module.tester.file.test_file_verificator import TestFileVerficator
+from aasist.src.module.tester.option_type import IDTA, KOSMO
 
 
 class TestScreen(ctk.CTkFrame):
     default_options = {
-        "standard": True,
-        "ignore_optional_constraints": False,
-        "check_id_short": True,
-        "check_IRDI_or_IRI": True,
-        "check_sumbodel_component": True,
-        "check_cd_rules": True,
-        "check_kind_type": True,
-        "check_thumbnail": True,
-        "checl_exist_value": False,
-        "check_cd_mapping": False,
+        IDTA.standard.name: True,
+        IDTA.optional.name: False,
+        KOSMO.id_short_rule.name: True,
+        KOSMO.id_rule.name: True,
+        KOSMO.submodel_rule.name: True,
+        KOSMO.concept_description_rule.name: True,
+        KOSMO.kind_rule.name: True,
+        KOSMO.thumbnail_rule.name: True,
+        KOSMO.value_rule.name: False,
+        KOSMO.submodel_element_collection_rule: False,
     }
 
     def __init__(self, parent: ctk.CTkFrame):
         super().__init__(parent)
+        self._files: List[str] = []
+        self._url: str = None
         self.parent = parent
         self.chosen_options: Dict[str, bool] = self.default_options.copy()
         self.theme_data = ctk.ThemeManager.theme
@@ -36,17 +45,17 @@ class TestScreen(ctk.CTkFrame):
     def layout(self):
 
         self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=0)
         self.grid_rowconfigure(1, weight=1)
-        self.grid_rowconfigure(2, weight=1)
 
-        browse_frame = ctk.CTkFrame(
+        header_frame = ctk.CTkFrame(
             self, fg_color=self.theme_data["CTkFrame"]["fg_color"]
         )
-        browse_frame.grid(row=0, column=0, sticky=ctk.EW)
-        browse_frame.grid_columnconfigure(0, weight=1)
+        header_frame.grid(row=0, column=0, sticky=ctk.EW)
+        header_frame.grid_columnconfigure(0, weight=1)
 
         self.file_selector = FileSelector(
-            browse_frame,
+            header_frame,
             on_files_selected=self.handle_file_selected,
             file_types=[
                 ("AAS Files", "*.aasx"),
@@ -58,27 +67,28 @@ class TestScreen(ctk.CTkFrame):
         self.file_selector.grid(row=0, column=0, sticky=ctk.EW, pady=(8, 0), padx=8)
 
         file_horizontal_divider = Divider(
-            browse_frame, orientation="horizontal", thickness=2
+            header_frame, orientation="horizontal", thickness=2
         )
         file_horizontal_divider.grid_horizontal(row=1, column=0, pady=(4, 4), padx=8)
 
         self.url_form = UrlInputForm(
-            browse_frame,
+            header_frame,
             on_submit=self.handle_url_submitted,
             bg_color=self.theme_data["CTkFrame"]["fg_color"],
         )
         self.url_form.grid(row=2, column=0, sticky=ctk.EW, pady=(8, 0), padx=8)
 
-        url_horizontal_divider = Divider(self, orientation="horizontal", thickness=2)
+        url_horizontal_divider = Divider(
+            header_frame, orientation="horizontal", thickness=2
+        )
         url_horizontal_divider.grid_horizontal(row=3, column=0, pady=(4, 4), padx=8)
 
         content_frame = ctk.CTkFrame(
             self, fg_color=self.theme_data["CTkFrame"]["fg_color"]
         )
-        content_frame.grid(row=4, column=0, sticky=ctk.NSEW, pady=(0, 8))
-        content_frame.grid_columnconfigure(0, weight=1)
-        content_frame.grid_columnconfigure(1, weight=1)
-        content_frame.grid_columnconfigure(2, weight=2)
+        content_frame.grid(row=1, column=0, sticky=ctk.NSEW, pady=(0, 8))
+        content_frame.grid_columnconfigure(0, weight=0)
+        content_frame.grid_columnconfigure(1, weight=2)
         content_frame.grid_rowconfigure(0, weight=1)
 
         left_frame = ctk.CTkFrame(
@@ -89,7 +99,7 @@ class TestScreen(ctk.CTkFrame):
         right_frame = ctk.CTkFrame(
             content_frame, fg_color=self.theme_data["CTkFrame"]["fg_color"]
         )
-        right_frame.grid(row=0, column=2, sticky=ctk.NSEW, padx=(0, 16))
+        right_frame.grid(row=0, column=1, sticky=ctk.NSEW, padx=(0, 16))
 
         self.option_panel(left_frame)
         self.output_panel(right_frame)
@@ -190,6 +200,7 @@ class TestScreen(ctk.CTkFrame):
             parent,
             log_queue=self.log_handler,
             bg_color=self.theme_data["CTkFrame"]["fg_color"],
+            width=720,
         )
         self.output_box.grid(row=1, column=0, sticky=ctk.NSEW, padx=8, pady=8)
 
@@ -199,26 +210,15 @@ class TestScreen(ctk.CTkFrame):
         )
         buttons_frame.grid(row=1, column=1, sticky=ctk.NE, pady=(0, 8), padx=(4, 0))
 
-        run_button = ctk.CTkButton(
+        self.run_button = TestExecuteButton(
             buttons_frame,
-            text="Run Test",
-            command=lambda: self.handle_run_test(
-                # TODO: add parameters
-            ),
-            width=160,
-            font=ctk.CTkFont(size=18, weight="normal"),
+            on_test=lambda: self.handle_run_test(files=self._files, api=self._url),
         )
-        run_button.grid(
-            row=0,
-            column=0,
-            sticky=ctk.E,
-            pady=8,
-            ipady=8,
-        )
+        self.run_button.grid(row=0, column=0, sticky=ctk.E, pady=8)
 
         self.file_exporter = FileExporter(
             buttons_frame,
-            on_export=self.handle_export_test_results,
+            on_export=lambda: self.handle_export_test_results(),
         )
         self.file_exporter.grid(row=1, column=0, sticky=ctk.E, pady=(0, 8))
 
@@ -226,13 +226,28 @@ class TestScreen(ctk.CTkFrame):
         clear_button.grid(row=2, column=0, sticky=ctk.E, pady=(0, 8))
 
     def handle_file_selected(self, file_paths: List[str]):
-        pass
+        self._files = file_paths
 
     def handle_url_submitted(self, url: str):
-        print(f"URL submitted: {url}")
+        self._url = url
 
-    def handle_run_test(self, **kwargs):
-        pass
+    def handle_run_test(self, **kwargs: Any):
+        files: Optional[List[str]] = kwargs.get("files", [])
+        api: Optional[str] = kwargs.get("api", "")
+
+        for file in files:
+            self.log_handler.add(f"Start test AAS file: {file}", LogLevel.INFO)
+            test = TestFileVerficator(
+                file=file,
+                use_aas_test_engine=self.chosen_options[IDTA.standard.name],
+                ignore_optional_constraints=self.chosen_options[IDTA.optional.name],
+            )
+            test.verify()
+            for result in test.results.values():
+                if result:
+                    self.log_handler.add(f"Passed for {file}", LogLevel.SUCCESS)
+                else:
+                    self.log_handler.add(f"Failed for {file}", LogLevel.INFO)
 
     def handle_export_test_results(self):
         pass
