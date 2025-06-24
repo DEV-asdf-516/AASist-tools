@@ -3,7 +3,6 @@ import logging
 import os
 import re
 from typing import IO, Iterable, Optional, Union
-
 import pyecma376_2
 from aasist.src.module.format import AasFileFormat
 from aasist.src.module.guidance.submodel_table_parser import SubmodelTableParser

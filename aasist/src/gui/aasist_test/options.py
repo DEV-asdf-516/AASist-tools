@@ -19,30 +19,38 @@ class TestExecuteButton(ctk.CTkFrame):
         self.stop_event = threading.Event()
         self.is_processing = False
 
-        run_button = ctk.CTkButton(
+        self.run_button = ctk.CTkButton(
             self,
             text="Run Test",
             command=lambda: self.start(**kwargs),
             width=160,
             font=ctk.CTkFont(size=18, weight="normal"),
         )
-        run_button.grid(row=0, column=0, pady=(0, 4), ipady=8, sticky=ctk.E)
+        self.run_button.grid(row=0, column=0, pady=(0, 4), ipady=8, sticky=ctk.E)
 
     def run_test(self, **kwargs: Any):
         self.on_test(**kwargs)
         self.is_processing = False
+        self.after(0, self.reset_button_state, "Run Test")
 
     def start(self, **kwargs: Any):
         if self.is_processing:
+            self.stop()
             return
         self.is_processing = True
         self.stop_event.clear()
+        self.reset_button_state("Stop Test")
         self.thread = threading.Thread(target=self.run_test, args=(kwargs), daemon=True)
         self.thread.start()
 
     def stop(self):
-        self.stop_event.set()
-        self.is_processing = False
+        if self.is_processing:
+            self.stop_event.set()
+            self.is_processing = False
+            self.reset_button_state("Run Test")
+
+    def reset_button_state(self, text: str):
+        self.run_button.configure(text=text)
 
 
 class UrlInputForm(ctk.CTkFrame):
@@ -160,7 +168,7 @@ class IdtaOptions(ctk.CTkFrame):
         )
         ignore_optional_constraints_desc = ctk.CTkLabel(
             self,
-            text="필수가 아닌 제약조건을 무시합니다",
+            text="표준 제약조건 검사 시, 필수가 아닌 제약조건을 무시합니다",
             font=ctk.CTkFont(size=14),
             text_color="#9C9C9C",
         )

@@ -16,7 +16,6 @@ class LogBox(ctk.CTkFrame):
         super().__init__(parent, bg_color=bg_color)
         self.log_line = 0
         self.log_queue = log_queue
-
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
@@ -35,7 +34,6 @@ class LogBox(ctk.CTkFrame):
             try:
                 if self.log_line > self.MAX_LOG_LINE:
                     self._remove_old_logs()
-
                 log_message, log_level = self.log_queue.get()
                 if not self.output_box:
                     return

@@ -13,7 +13,7 @@ from aasist.src.gui.common.divider import Divider
 from aasist.src.gui.common.file_exporter import FileExporter
 from aasist.src.gui.common.file_selector import FileSelector
 from aasist.src.gui.common.log_box import LogBox
-from aasist.src.gui.handler import _TEST_LOG_NAME, LogLevel, QueueHandler
+from aasist.src.gui.handler import _TEST_LOG_NAME, QueueHandler
 from aasist.src.module.tester.file.test_file_verificator import TestFileVerficator
 from aasist.src.module.tester.option_type import IDTA, KOSMO
 
@@ -212,7 +212,16 @@ class TestScreen(ctk.CTkFrame):
 
         self.run_button = TestExecuteButton(
             buttons_frame,
-            on_test=lambda: self.handle_run_test(files=self._files, api=self._url),
+            on_test=lambda: self.handle_run_test(
+                files=self._files,
+                api=self._url,
+                kosmo_options={
+                    key: value
+                    for key, value in self.chosen_options.items()
+                    if key in {k for k in self.kosmo_options.copy_chosen_options.keys()}
+                    and value == True
+                },
+            ),
         )
         self.run_button.grid(row=0, column=0, sticky=ctk.E, pady=8)
 
@@ -232,22 +241,22 @@ class TestScreen(ctk.CTkFrame):
         self._url = url
 
     def handle_run_test(self, **kwargs: Any):
+        kosmo_options = kwargs.get("kosmo_options", {})
         files: Optional[List[str]] = kwargs.get("files", [])
         api: Optional[str] = kwargs.get("api", "")
 
         for file in files:
-            self.log_handler.add(f"Start test AAS file: {file}", LogLevel.INFO)
             test = TestFileVerficator(
                 file=file,
                 use_aas_test_engine=self.chosen_options[IDTA.standard.name],
                 ignore_optional_constraints=self.chosen_options[IDTA.optional.name],
+                stop_event=self.run_button.stop_event,
+                kosmo_options=kosmo_options,
             )
             test.verify()
-            for result in test.results.values():
-                if result:
-                    self.log_handler.add(f"Passed for {file}", LogLevel.SUCCESS)
-                else:
-                    self.log_handler.add(f"Failed for {file}", LogLevel.INFO)
+
+        if not api:
+            return
 
     def handle_export_test_results(self):
         pass
