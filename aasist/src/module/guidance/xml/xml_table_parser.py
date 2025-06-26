@@ -84,7 +84,7 @@ class XmlTableParser(SubmodelTableParser):
             aas_shells, lambda e: XmlTags.is_match(e.tag, XmlTags.ID_SHORT)
         ):
             aas: etree._Element
-            log_handler.add(f"Assemble asset Administration Shell...: {aas.text}")
+            log_handler.add(f"Assemble Asset Administration Shell...: {aas.text}")
 
         # set submodel identifier
         identifier = ParseObjectIdentifier()

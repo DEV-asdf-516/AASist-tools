@@ -136,7 +136,7 @@ class SubmodelTableExtractor(ABC):
                                 )
 
                     log_handler.add(
-                        f"Exporting submodel '{submodel}' to {self._prefix}_{submodel}.xlsx"
+                        f"Exporting Submodel '{submodel}' to {self._prefix}_{submodel}.xlsx"
                     )
                     wb.save(self._prefix + "_" + submodel + ".xlsx")
                     wb.close()
@@ -146,7 +146,7 @@ class SubmodelTableExtractor(ABC):
         except Exception as e:
             self.failure_count += 1
             log_handler.add(
-                f"Error exporting submodel : {e}",
+                f"Error exporting Submodel : {e}",
                 log_level=LogLevel.ERROR,
             )
 

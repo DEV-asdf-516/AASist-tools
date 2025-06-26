@@ -137,7 +137,9 @@ class XmlRowBuilder(ModelBuilder):
             self._stage = RowPipelineStage.idle
 
     def _handle_set_model_value(self, object: XmlDataObject):
-        if XmlTags.is_match(object.tag, XmlTags.VALUE_TYPE):
+        if XmlTags.is_match(object.tag, XmlTags.VALUE_TYPE) or XmlTags.is_match(
+            object.tag, XmlTags.CONTENT_TYPE
+        ):
             self.current_instance.value_type = object.text
         if XmlTags.is_match(object.tag, XmlTags.VALUE):
             self.current_instance.value = object.text
