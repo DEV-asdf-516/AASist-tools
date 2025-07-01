@@ -124,7 +124,7 @@ class IdtaOptions(ctk.CTkFrame):
         self.default_options = default_options
         self.idta_options = [
             (IDTA.standard.name, "표준 검사"),
-            (IDTA.optional.name, "권장 제약 조건 무시"),
+            (IDTA.optional.name, "느슨한 표준 검사"),
         ]
         self.copy_chosen_options: Dict[str, ctk.BooleanVar] = {
             key: ctk.BooleanVar(self, value=value)
@@ -168,7 +168,7 @@ class IdtaOptions(ctk.CTkFrame):
         )
         ignore_optional_constraints_desc = ctk.CTkLabel(
             self,
-            text="표준 제약조건 검사 시, 필수가 아닌 제약조건을 무시합니다",
+            text="AASX 뷰어에서 정상적으로 조회되는 경우 표준을 준수했다고 간주합니다.",
             font=ctk.CTkFont(size=14),
             text_color="#9C9C9C",
         )

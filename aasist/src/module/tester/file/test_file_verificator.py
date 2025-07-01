@@ -22,7 +22,7 @@ from aasist.src.module.tester.extends.test_result_wrapper import (
 
 _CHECKLIST = {
     IDTA.standard: "# 1. 표준 검사",
-    IDTA.optional: "# 2. 표준 검사(권장 제약조건 무시)",
+    IDTA.optional: "# 2. 느슨한 표준 검사",
     KOSMO.id_short_rule: "# 1. idShort 설정/명명 규칙 검사",
     KOSMO.id_rule: "# 2. IRDI/IRI 형식 검사",
     KOSMO.submodel_rule: "# 3. Submodel 구성 검사",
@@ -58,7 +58,7 @@ class TestFileVerficator:
 
         if self.ignore_opional_constraints:
             self.log_handler.add("AAS Checklist options: IDTA", LogLevel.INFO)
-            with LenientValidationContext():
+            with LenientValidationContext():  # TODO: 권장 제약옵션만
                 self.log_handler.add(f"{_CHECKLIST[IDTA.optional]}", LogLevel.INFO)
                 self._check_by_test_engine(self._file, IDTA.optional)
 

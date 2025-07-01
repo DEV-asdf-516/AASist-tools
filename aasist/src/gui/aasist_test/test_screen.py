@@ -147,34 +147,34 @@ class TestScreen(ctk.CTkFrame):
         )
         idta_label.grid(row=0, column=0, sticky=ctk.W, pady=(8, 0), padx=16)
 
-        self.idta_options = IdtaOptions(
-            options_container,
-            on_check=self.handle_checkbox_options_changed,
-            chosen_options=self.chosen_options,
-            default_options=self.default_options,
-            bg_color="#ededed",
-        )
-        self.idta_options.grid(row=1, column=0, sticky=ctk.W, pady=8, padx=16)
+        # self.idta_options = IdtaOptions(
+        #     options_container,
+        #     on_check=self.handle_checkbox_options_changed,
+        #     chosen_options=self.chosen_options,
+        #     default_options=self.default_options,
+        #     bg_color="#ededed",
+        # )
+        # self.idta_options.grid(row=1, column=0, sticky=ctk.W, pady=8, padx=16)
 
-        idta_divider = Divider(options_container, orientation="horizontal", thickness=2)
-        idta_divider.grid_horizontal(row=2, column=0, sticky=ctk.EW)
+        # idta_divider = Divider(options_container, orientation="horizontal", thickness=2)
+        # idta_divider.grid_horizontal(row=2, column=0, sticky=ctk.EW)
 
-        # KOSMO section
-        kosmo_label = ctk.CTkLabel(
-            options_container,
-            text="KOSMO",
-            font=ctk.CTkFont(size=18, weight="bold"),
-        )
-        kosmo_label.grid(row=3, column=0, sticky=ctk.W, pady=4, padx=16)
+        # # KOSMO section
+        # kosmo_label = ctk.CTkLabel(
+        #     options_container,
+        #     text="KOSMO",
+        #     font=ctk.CTkFont(size=18, weight="bold"),
+        # )
+        # kosmo_label.grid(row=3, column=0, sticky=ctk.W, pady=4, padx=16)
 
-        self.kosmo_options = KosmoOptions(
-            options_container,
-            on_check=self.handle_checkbox_options_changed,
-            chosen_options=self.chosen_options,
-            default_options=self.default_options,
-            bg_color="#ededed",
-        )
-        self.kosmo_options.grid(row=4, column=0, sticky=ctk.W, pady=8, padx=16)
+        # self.kosmo_options = KosmoOptions(
+        #     options_container,
+        #     on_check=self.handle_checkbox_options_changed,
+        #     chosen_options=self.chosen_options,
+        #     default_options=self.default_options,
+        #     bg_color="#ededed",
+        # )
+        # self.kosmo_options.grid(row=4, column=0, sticky=ctk.W, pady=8, padx=16)
 
     def output_panel(self, parent: ctk.CTkFrame):
         parent.grid_columnconfigure(0, weight=1)
@@ -269,5 +269,5 @@ class TestScreen(ctk.CTkFrame):
 
     def reset_default_options(self, default_options: Dict[str, bool]):
         self.chosen_options = default_options.copy()
-        self.idta_options.init_checkboxes()
-        self.kosmo_options.init_checkboxes()
+        # self.idta_options.init_checkboxes()
+        # self.kosmo_options.init_checkboxes()
