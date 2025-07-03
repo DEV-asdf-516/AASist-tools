@@ -108,9 +108,8 @@ class SubmodelOptions(ctk.CTkFrame):
         self._callback()
 
     def init_checkboxes(self):
-        for key, var in self.copy_chosen_options.items():
+        for var in self.copy_chosen_options.values():
             var.set(True)
-
         self._callback()
 
     def _callback(self):

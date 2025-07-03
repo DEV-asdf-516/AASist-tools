@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import customtkinter as ctk
-
+import copy
 from aasist.src.gui.aasist_test.options import (
     IdtaOptions,
     KosmoOptions,
@@ -13,31 +13,84 @@ from aasist.src.gui.common.divider import Divider
 from aasist.src.gui.common.file_exporter import FileExporter
 from aasist.src.gui.common.file_selector import FileSelector
 from aasist.src.gui.common.log_box import LogBox
+from aasist.src.gui.common.tree_checkbox_frame import TreeCheckboxFrame
 from aasist.src.gui.handler import _TEST_LOG_NAME, QueueHandler
 from aasist.src.module.tester.file.test_file_verificator import TestFileVerficator
-from aasist.src.module.tester.option_type import IDTA, KOSMO
+from aasist.src.module.tester.constants import IDTA, KOSMO
 
 
 class TestScreen(ctk.CTkFrame):
     default_options = {
         IDTA.standard.name: True,
         IDTA.optional.name: False,
-        KOSMO.id_short_rule.name: True,
-        KOSMO.id_rule.name: True,
-        KOSMO.submodel_rule.name: True,
-        KOSMO.concept_description_rule.name: True,
-        KOSMO.kind_rule.name: True,
-        KOSMO.thumbnail_rule.name: True,
-        KOSMO.value_rule.name: False,
-        KOSMO.submodel_element_collection_rule: False,
+        IDTA.aasd_002.name: False,
+        IDTA.aasd_005.name: False,
+        IDTA.aasd_006.name: False,
+        IDTA.aasd_007.name: False,
+        IDTA.aasd_014.name: False,
+        IDTA.aasd_022.name: False,
+        IDTA.aasd_090.name: False,
+        IDTA.aasd_107.name: False,
+        IDTA.aasd_109.name: False,
+        IDTA.aasd_114.name: False,
+        IDTA.aasd_116.name: False,
+        IDTA.aasd_117.name: False,
+        IDTA.aasd_118.name: False,
+        IDTA.aasd_119.name: False,
+        IDTA.aasd_120.name: False,
+        IDTA.aasd_121.name: False,
+        IDTA.aasd_122.name: False,
+        IDTA.aasd_123.name: False,
+        IDTA.aasd_124.name: False,
+        IDTA.aasd_125.name: False,
+        IDTA.aasd_126.name: False,
+        IDTA.aasd_127.name: False,
+        IDTA.aasd_129.name: False,
+        IDTA.aasd_130.name: False,
+        IDTA.aasd_131.name: False,
+        IDTA.aasd_133.name: False,
+        IDTA.aasd_134.name: False,
+        IDTA.aasc_3a_002.name: False,
+        IDTA.aasc_3a_004.name: False,
+        IDTA.aasc_3a_005.name: False,
+        IDTA.aasc_3a_006.name: False,
+        IDTA.aasc_3a_007.name: False,
+        IDTA.aasc_3a_008.name: False,
+        IDTA.aasc_3a_009.name: False,
+        IDTA.aasc_3c_010.name: False,
+        KOSMO.aas_thumbnail.name: True,
+        KOSMO.aas_id_short.name: True,
+        KOSMO.aas_id.name: True,
+        KOSMO.aas_submodel.name: True,
+        KOSMO.aas_global_asset_id.name: False,
+        KOSMO.aas_type.name: True,
+        KOSMO.submodel_id_short.name: True,
+        KOSMO.submodel_id.name: True,
+        KOSMO.submodel_semantic_id.name: True,
+        KOSMO.submodel_kind.name: True,
+        KOSMO.smc_id_short.name: True,
+        KOSMO.smc_cd_mapping.name: False,
+        KOSMO.prop_id_short.name: True,
+        KOSMO.prop_cd_mapping.name: True,
+        KOSMO.prop_value.name: False,
+        KOSMO.cd_id_short.name: True,
+        KOSMO.cd_id.name: True,
+        KOSMO.cd_definition.name: True,
     }
+
+    idta_group = ["idta", "aasd", "aasc_3a"]
+    kosmo_group = ["kosmo_aas", "kosmo_submodel", "kosmo_smc", "kosmo_prop", "kosmo_cd"]
 
     def __init__(self, parent: ctk.CTkFrame):
         super().__init__(parent)
+        self._default_expanded_states = {
+            k: k == "idta" for k in self.idta_group + self.kosmo_group
+        }
         self._files: List[str] = []
         self._url: str = None
         self.parent = parent
         self.chosen_options: Dict[str, bool] = self.default_options.copy()
+        self.expanded_states: Dict[str, bool] = self._default_expanded_states.copy()
         self.theme_data = ctk.ThemeManager.theme
         self.log_handler = QueueHandler(_TEST_LOG_NAME)
         self.layout()
@@ -91,32 +144,31 @@ class TestScreen(ctk.CTkFrame):
         content_frame.grid_columnconfigure(1, weight=2)
         content_frame.grid_rowconfigure(0, weight=1)
 
-        left_frame = ctk.CTkFrame(
+        self.left_frame = ctk.CTkFrame(
             content_frame, fg_color=self.theme_data["CTkFrame"]["fg_color"]
         )
-        left_frame.grid(row=0, column=0, sticky=ctk.NSEW, padx=(16, 0))
+        self.left_frame.grid(row=0, column=0, sticky=ctk.NSEW, padx=(16, 0))
 
-        right_frame = ctk.CTkFrame(
+        self.right_frame = ctk.CTkFrame(
             content_frame, fg_color=self.theme_data["CTkFrame"]["fg_color"]
         )
-        right_frame.grid(row=0, column=1, sticky=ctk.NSEW, padx=(0, 16))
-
-        self.option_panel(left_frame)
-        self.output_panel(right_frame)
+        self.right_frame.grid(row=0, column=1, sticky=ctk.NSEW, padx=(0, 16))
+        self.option_panel(self.left_frame)
+        self.output_panel(self.right_frame)
 
     def option_panel(self, parent: ctk.CTkFrame):
         parent.grid_columnconfigure(0, weight=1)
         parent.grid_rowconfigure(1, weight=1)
 
-        header_frame = ctk.CTkFrame(
+        self.header_frame = ctk.CTkFrame(
             parent, fg_color=self.theme_data["CTkFrame"]["fg_color"]
         )
-        header_frame.grid(row=0, column=0, sticky=ctk.EW)
-        header_frame.grid_columnconfigure(0, weight=1)
+        self.header_frame.grid(row=0, column=0, sticky=ctk.EW)
+        self.header_frame.grid_columnconfigure(0, weight=1)
 
         # Title section
         title_label = ctk.CTkLabel(
-            header_frame,
+            self.header_frame,
             text="AAS Checklist options",
             font=ctk.CTkFont(size=20, weight="bold"),
             fg_color=self.theme_data["CTkLabel"]["fg_color"],
@@ -124,57 +176,14 @@ class TestScreen(ctk.CTkFrame):
         title_label.grid(row=0, column=0, sticky=ctk.W, padx=16)
 
         default_button = DefaultButton(
-            header_frame,
+            self.header_frame,
             on_click=self.reset_default_options,
             default_options=self.default_options,
             bg_color=self.theme_data["CTkFrame"]["fg_color"],
         )
         default_button.grid(row=0, column=2, sticky=ctk.E)
 
-        options_container = ctk.CTkFrame(
-            parent, fg_color="#ededed", border_width=1, corner_radius=6
-        )
-        options_container.grid(
-            row=1, column=0, columnspan=3, sticky=ctk.NSEW, padx=(0, 8), pady=(0, 8)
-        )
-        options_container.grid_columnconfigure(0, weight=1)
-
-        # IDTA section
-        idta_label = ctk.CTkLabel(
-            options_container,
-            text="IDTA",
-            font=ctk.CTkFont(size=18, weight="bold"),
-        )
-        idta_label.grid(row=0, column=0, sticky=ctk.W, pady=(8, 0), padx=16)
-
-        # self.idta_options = IdtaOptions(
-        #     options_container,
-        #     on_check=self.handle_checkbox_options_changed,
-        #     chosen_options=self.chosen_options,
-        #     default_options=self.default_options,
-        #     bg_color="#ededed",
-        # )
-        # self.idta_options.grid(row=1, column=0, sticky=ctk.W, pady=8, padx=16)
-
-        # idta_divider = Divider(options_container, orientation="horizontal", thickness=2)
-        # idta_divider.grid_horizontal(row=2, column=0, sticky=ctk.EW)
-
-        # # KOSMO section
-        # kosmo_label = ctk.CTkLabel(
-        #     options_container,
-        #     text="KOSMO",
-        #     font=ctk.CTkFont(size=18, weight="bold"),
-        # )
-        # kosmo_label.grid(row=3, column=0, sticky=ctk.W, pady=4, padx=16)
-
-        # self.kosmo_options = KosmoOptions(
-        #     options_container,
-        #     on_check=self.handle_checkbox_options_changed,
-        #     chosen_options=self.chosen_options,
-        #     default_options=self.default_options,
-        #     bg_color="#ededed",
-        # )
-        # self.kosmo_options.grid(row=4, column=0, sticky=ctk.W, pady=8, padx=16)
+        self._collapsed_container()
 
     def output_panel(self, parent: ctk.CTkFrame):
         parent.grid_columnconfigure(0, weight=1)
@@ -218,7 +227,7 @@ class TestScreen(ctk.CTkFrame):
                 kosmo_options={
                     key: value
                     for key, value in self.chosen_options.items()
-                    if key in {k for k in self.kosmo_options.copy_chosen_options.keys()}
+                    if key in {k for k in self.kosmo.copy_chosen_options.keys()}
                     and value == True
                 },
             ),
@@ -234,6 +243,59 @@ class TestScreen(ctk.CTkFrame):
         clear_button = ClearButton(buttons_frame, on_click=self.handle_clear_output)
         clear_button.grid(row=2, column=0, sticky=ctk.E, pady=(0, 8))
 
+    def _collapsed_container(self):
+        self.options_container = ctk.CTkFrame(
+            self.left_frame,
+            border_width=1,
+            corner_radius=6,
+            fg_color=self.theme_data["CTkFrame"]["fg_color"],
+        )
+        self.options_container.grid(
+            row=1, column=0, columnspan=3, sticky=ctk.NSEW, padx=(0, 8), pady=(0, 8)
+        )
+        self.options_container.grid_columnconfigure(0, weight=1)
+
+        # IDTA section
+        self.idta_label = ctk.CTkLabel(
+            self.options_container,
+            text="IDTA",
+            font=ctk.CTkFont(size=20, weight="bold"),
+        )
+        self.idta_label.grid(row=0, column=0, sticky=ctk.W, pady=(8, 0), padx=16)
+
+        self.idta = IdtaOptions(
+            self.options_container,
+            on_check=self.handle_checkbox_options_changed,
+            on_expanded=self.handle_expanded,
+            chosen_options=self.chosen_options,
+            default_options=self.default_options,
+            expanded_states=self.expanded_states,
+        )
+        self.idta.grid(row=1, column=0, sticky=ctk.EW, pady=8, padx=16)
+
+        self.idta_divider = Divider(
+            self.options_container, orientation="horizontal", thickness=2
+        )
+        self.idta_divider.grid_horizontal(row=2, column=0, sticky=ctk.EW)
+
+        # KOSMO section
+        self.kosmo_label = ctk.CTkLabel(
+            self.options_container,
+            text="KOSMO",
+            font=ctk.CTkFont(size=20, weight="bold"),
+        )
+        self.kosmo_label.grid(row=3, column=0, sticky=ctk.W, pady=(8, 0), padx=16)
+
+        self.kosmo = KosmoOptions(
+            self.options_container,
+            on_check=self.handle_checkbox_options_changed,
+            on_expanded=self.handle_expanded,
+            chosen_options=self.chosen_options,
+            default_options=self.default_options,
+            expanded_states=self.expanded_states,
+        )
+        self.kosmo.grid(row=4, column=0, sticky=ctk.EW, pady=8, padx=16)
+
     def handle_file_selected(self, file_paths: List[str]):
         self._files = file_paths
 
@@ -244,6 +306,9 @@ class TestScreen(ctk.CTkFrame):
         kosmo_options = kwargs.get("kosmo_options", {})
         files: Optional[List[str]] = kwargs.get("files", [])
         api: Optional[str] = kwargs.get("api", "")
+
+        kosmo_options[IDTA.all_aasd.name] = self.idta.aasd.is_all.get()
+        kosmo_options[IDTA.all_aasc_3a.name] = self.idta.aasc_3a.is_all.get()
 
         for file in files:
             test = TestFileVerficator(
@@ -267,7 +332,25 @@ class TestScreen(ctk.CTkFrame):
     def handle_checkbox_options_changed(self, options: Dict[str, bool]):
         self.chosen_options.update(options)
 
+    def handle_expanded(self, state: Tuple[str, bool]):
+        name, expanded = state
+        for section in self.expanded_states.keys():
+            checkbox: TreeCheckboxFrame = None
+
+            if section != name:
+                self.expanded_states[section] = False
+
+            if section in self.idta_group:
+                checkbox = getattr(self.idta, section)
+            elif section in self.kosmo_group:
+                checkbox = getattr(self.kosmo, section)
+
+            if section != name and checkbox.expanded:
+                checkbox._toggle_items_visibility(trigger_callback=False)
+
+        self.expanded_states[name] = expanded
+
     def reset_default_options(self, default_options: Dict[str, bool]):
         self.chosen_options = default_options.copy()
-        # self.idta_options.init_checkboxes()
-        # self.kosmo_options.init_checkboxes()
+        self.idta.init_checkboxes()
+        self.kosmo.init_checkboxes()

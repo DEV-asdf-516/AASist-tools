@@ -1,10 +1,13 @@
 from enum import Enum
-from typing import Iterable, List, Optional
-from aasist.src.module.tester.extends.extends_validation_context import (
+from typing import Dict, Iterable, List, Optional
+from aasist.src.module.tester.extends.context.extends_validation_context import (
     ExtendsValidationContext,
 )
-from aas_test_engines.test_cases.v3_0.model import Referable, ConceptDescription
-from aas_test_engines.reflect import TypeBase
+from aas_test_engines.test_cases.v3_0.model import (
+    Referable,
+    Identifiable,
+    AssetInformation,
+)
 
 
 class _KosmoContextRules(Enum):
@@ -26,12 +29,21 @@ class KosmoValidationContext(ExtendsValidationContext):
         super().__init__()
 
     def __enter__(self):
-        self.referables: List[Referable] = []
-        self.parents: List[TypeBase] = []
-        self.concept_descriptions: List[ConceptDescription] = []
+        self.referables: Dict[str, List[Referable]] = {
+            "AssetAdministrationShell": [],
+            "Submodel": [],
+            "SubmodelElementCollection": [],
+            "Property": [],
+            "ConceptDescription": [],
+        }
+        self.identifiables: Dict[str, List[Identifiable]] = {
+            "AssetAdministrationShell": [],
+            "Submodel": [],
+            "ConceptDescription": [],
+        }
+        self.asset_informations: List[AssetInformation] = []
         self._petch_parse()
         self._petch_kosmo_id_short_rules()
-        self._kosmo_iri_rule()
         self._kosmo_irdi_rule()
         self._patch_kosmo_concept_description_rules()
         return self
@@ -80,14 +92,23 @@ class KosmoValidationContext(ExtendsValidationContext):
             construct = cls.construct(args)
 
             # idShort rule - 명명규칙 / Submodel 구성요소 검사
-            if issubclass(construct.__class__, Referable):
-                if getattr(construct.id_short, "raw_value", None):
-                    self.referables.append(construct)
-            # idShort rule - 설정여부
-            if hasattr(construct, "check_aasd_117"):
-                self.parents.append(construct)
-            if isinstance(construct, ConceptDescription):
-                self.concept_descriptions.append(construct)
+            if issubclass(construct.__class__, Referable) and getattr(
+                construct.id_short, "raw_value", None
+            ):
+                class_name = construct.__class__.__name__
+                referables = self.referables.get(class_name, None)
+                if referables is not None:
+                    self.referables[class_name].append(construct)
+            # IRDI/IRI 형식 검사
+            if issubclass(construct.__class__, Identifiable):
+                class_name = construct.__class__.__name__
+                identifiables = self.identifiables.get(class_name, None)
+                if identifiables is not None:
+                    self.identifiables[class_name].append(construct)
+            # globalAssetId 검사
+            if isinstance(construct, AssetInformation):
+                self.asset_informations.append(construct)
+
             return cls.construct(args)
 
         parse_module.parse_concrete_object = kosmo_parse_concrete_object
@@ -111,12 +132,14 @@ class KosmoValidationContext(ExtendsValidationContext):
         )
 
         def kosmo_id_short_naming_rule(instance) -> Optional[str]:
-            if (
-                instance.id_short
-                and re.fullmatch(r"[A-Z][a-zA-Z0-9_]*", instance.id_short.raw_value)
-                is None
+            if hasattr(instance, "id_short") and hasattr(
+                instance.id_short, "raw_value"
             ):
-                return f"""The idShort "{instance.id_short}" violates the Kosmo rules:\n\r- idShort는 비어있을 수 없습니다.\n\r- idShort는 반드시 영문 대문자로 시작해야 합니다.\n\r- idShort는 영문 대소문자, 숫자, 밑줄(_)만 포함할 수 있습니다."""
+                if (
+                    re.fullmatch(r"[A-Z][a-zA-Z0-9_]*", instance.id_short.raw_value)
+                    is None
+                ):
+                    return f"""The idShort "{instance.id_short}" violates the Kosmo rules:\n\r- idShort는 비어있을 수 없습니다.\n\r- idShort는 반드시 영문 대문자로 시작해야 합니다.\n\r- idShort는 영문 대소문자, 숫자, 밑줄(_)만 포함할 수 있습니다."""
 
         def kosmo_id_short_exist_rule(
             elements: Optional[List["Referable"]],
@@ -135,9 +158,6 @@ class KosmoValidationContext(ExtendsValidationContext):
 
         model_module.ensure_have_id_shorts = kosmo_id_short_exist_rule
         Referable.check_constraint_aasd_002 = kosmo_id_short_naming_rule
-
-    def _kosmo_iri_rule(self):
-        pass
 
     def _kosmo_irdi_rule(self):
         pass

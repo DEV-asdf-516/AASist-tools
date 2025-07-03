@@ -1,8 +1,9 @@
 import threading
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List, Tuple
 import customtkinter as ctk
 
-from aasist.src.module.tester.option_type import IDTA, KOSMO
+from aasist.src.gui.common.tree_checkbox_frame import TreeCheckboxFrame
+from aasist.src.module.tester.constants import IDTA, KOSMO
 
 
 class TestExecuteButton(ctk.CTkFrame):
@@ -115,75 +116,248 @@ class IdtaOptions(ctk.CTkFrame):
         self,
         parent: ctk.CTkFrame,
         on_check: Callable[[Dict[str, bool]], None],
+        on_expanded: Callable[[Tuple[str, bool]], None],
         chosen_options: Dict[str, bool],
+        expanded_states: Dict[str, bool] = None,
         default_options: Dict[str, bool] = None,
-        bg_color: str = None,
+        bg_color: str = "#F2F2F2",
     ):
         super().__init__(parent, fg_color=bg_color)
+        self.bg_color = bg_color
         self.on_check = on_check
+        self.on_expanded = on_expanded
         self.default_options = default_options
+        self.expanded_states: Dict[str, bool] = {
+            k: v for k, v in expanded_states.items() if k in {"idta", "aasd", "aasc_3a"}
+        }
         self.idta_options = [
-            (IDTA.standard.name, "표준 검사"),
-            (IDTA.optional.name, "느슨한 표준 검사"),
+            {
+                "key": IDTA.standard.name,
+                "label": "표준 검사",
+                "description": "IDTA 표준에 따른 참조모델의 제약조건을 검사합니다",
+            },
+            {
+                "key": IDTA.optional.name,
+                "label": "느슨한 표준 검사",
+                "description": "AAS 뷰어에서 정상적으로 조회되는 경우 표준을 준수했다고 간주합니다",
+            },
         ]
-        self.copy_chosen_options: Dict[str, ctk.BooleanVar] = {
+        self.part1_constraints = [
+            {
+                "key": IDTA.aasd_002.name,
+                "label": "AASd-002 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_005.name,
+                "label": "AASd-005 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_006.name,
+                "label": "AASd-006 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_014.name,
+                "label": "AASd-014 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_022.name,
+                "label": "AASd-022 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_090.name,
+                "label": "AASd-090 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_107.name,
+                "label": "AASd-107 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_109.name,
+                "label": "AASd-109 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_114.name,
+                "label": "AASd-114 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_116.name,
+                "label": "AASd-116 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_117.name,
+                "label": "AASd-117 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_118.name,
+                "label": "AASd-118 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_119.name,
+                "label": "AASd-119 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_120.name,
+                "label": "AASd-120 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_121.name,
+                "label": "AASd-121 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_122.name,
+                "label": "AASd-122 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_123.name,
+                "label": "AASd-123 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_124.name,
+                "label": "AASd-124 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_125.name,
+                "label": "AASd-125 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_126.name,
+                "label": "AASd-126 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_127.name,
+                "label": "AASd-127 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_129.name,
+                "label": "AASd-129 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_130.name,
+                "label": "AASd-130 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_131.name,
+                "label": "AASd-131 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_133.name,
+                "label": "AASd-133 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasd_134.name,
+                "label": "AASd-134 제약조건 검사",
+            },
+        ]
+        self.part3a_constraints = [
+            {
+                "key": IDTA.aasc_3a_002.name,
+                "label": "AASc-3a-002 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasc_3a_004.name,
+                "label": "AASc-3a-004 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasc_3a_005.name,
+                "label": "AASc-3a-005 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasc_3a_006.name,
+                "label": "AASc-3a-006 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasc_3a_007.name,
+                "label": "AASc-3a-007 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasc_3a_008.name,
+                "label": "AASc-3a-008 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasc_3a_009.name,
+                "label": "AASc-3a-009 제약조건 검사",
+            },
+            {
+                "key": IDTA.aasc_3c_010.name,
+                "label": "AASc-3c-010 제약조건 검사",
+            },
+        ]
+
+        idta_choices = {
             key: ctk.BooleanVar(self, value=value)
             for key, value in chosen_options.items()
-            if key in {k for k, _ in self.idta_options}
+            if key in {m.get("key") for m in self.idta_options}
         }
+        aasd_choices = {
+            key: ctk.BooleanVar(self, value=value)
+            for key, value in chosen_options.items()
+            if key in {m.get("key") for m in self.part1_constraints}
+        }
+        aasc_3a_choices = {
+            key: ctk.BooleanVar(self, value=value)
+            for key, value in chosen_options.items()
+            if key in {m.get("key") for m in self.part3a_constraints}
+        }
+
         self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=0)
 
-        STANDARD_INDEX = 0
-        IGNORE_OPTIONAL_INDEX = 1
+        self.idta = TreeCheckboxFrame(
+            self,
+            title="표준 검증",
+            chosen_options=idta_choices,
+            items=self.idta_options,
+            on_check=self.check,
+            on_expanded=lambda expanded: self.expand("idta", expanded),
+            default_options=default_options,
+            is_expanded=self.expanded_states.get("idta", True),
+        )
+        self.idta.grid(row=0, column=0, sticky=ctk.NSEW, pady=(8, 0))
 
-        idta_standard = ctk.CTkCheckBox(
+        self.aasd = TreeCheckboxFrame(
             self,
-            text=self.idta_options[STANDARD_INDEX][-1],
-            variable=self.copy_chosen_options[IDTA.standard.name],
-            command=self._callback,
-            font=ctk.CTkFont(size=16),
-            width=16,
-            height=16,
+            title="Part 1. Check AASd",
+            chosen_options=aasd_choices,
+            items=self.part1_constraints,
+            on_check=self.check,
+            on_expanded=lambda expanded: self.expand("aasd", expanded),
+            default_options=default_options,
+            is_expanded=self.expanded_states.get("aasd", False),
         )
-        idta_standard.grid(row=0, column=0, sticky=ctk.W, padx=12, pady=(4, 0))
-        idta_standard_desc = ctk.CTkLabel(
-            self,
-            text="IDTA 표준에 따른 참조모델의 제약조건을 검사합니다",
-            font=ctk.CTkFont(size=14),
-            text_color="#9C9C9C",
-        )
-        idta_standard_desc.grid(row=1, column=0, sticky=ctk.W, ipadx=40, pady=(0, 4))
+        self.aasd.grid(row=1, column=0, sticky=ctk.NSEW, pady=8)
 
-        ignore_optional_constraints = ctk.CTkCheckBox(
+        self.aasc_3a = TreeCheckboxFrame(
             self,
-            text=self.idta_options[IGNORE_OPTIONAL_INDEX][-1],
-            variable=self.copy_chosen_options[IDTA.optional.name],
-            command=self._callback,
-            font=ctk.CTkFont(size=16),
-            width=16,
-            height=16,
+            title="Part 3. Check AASc-3a",
+            chosen_options=aasc_3a_choices,
+            items=self.part3a_constraints,
+            on_check=self.check,
+            on_expanded=lambda expanded: self.expand("aasc_3a", expanded),
+            default_options=default_options,
+            is_expanded=self.expanded_states.get("aasc_3a", False),
         )
-        ignore_optional_constraints.grid(
-            row=2, column=0, sticky=ctk.W, padx=12, pady=(4, 0)
-        )
-        ignore_optional_constraints_desc = ctk.CTkLabel(
-            self,
-            text="AASX 뷰어에서 정상적으로 조회되는 경우 표준을 준수했다고 간주합니다.",
-            font=ctk.CTkFont(size=14),
-            text_color="#9C9C9C",
-        )
-        ignore_optional_constraints_desc.grid(
-            row=3, column=0, sticky=ctk.W, ipadx=40, pady=(0, 4)
-        )
+
+        self.aasc_3a.grid(row=2, column=0, sticky=ctk.NSEW, pady=(0, 8))
+
+    def check(self, options: Dict[str, bool]):
+        # TODO
+        self.on_check(options)
 
     def init_checkboxes(self):
-        for key, var in self.copy_chosen_options.items():
-            var.set(self.default_options[key])
-        self._callback()
+        self.idta.init()
+        self.aasd.init()
+        self.aasc_3a.init()
 
-    def _callback(self):
-        result = {k: v.get() for k, v in self.copy_chosen_options.items()}
-        self.on_check(result)
+    def expanded_with_height(self) -> List[Tuple[bool, int, int]]:
+        return [
+            (self.idta.expanded, 180, 180),
+            (self.aasd.expanded, 27, 255),
+            (self.aasc_3a.expanded, 27, 255),
+        ]
+
+    def expand(self, option_name: str, expanded: bool):
+        self.expanded_states[option_name] = expanded
+        self.on_expanded((option_name, expanded))
 
 
 class KosmoOptions(ctk.CTkFrame):
@@ -191,82 +365,246 @@ class KosmoOptions(ctk.CTkFrame):
         self,
         parent: ctk.CTkFrame,
         on_check: Callable[[Dict[str, bool]], None],
+        on_expanded: Callable[[Tuple[str, bool]], None],
         chosen_options: Dict[str, bool],
+        expanded_states: Dict[str, bool] = None,
         default_options: Dict[str, bool] = None,
-        bg_color: str = None,
+        bg_color: str = "#F2F2F2",
     ):
         super().__init__(parent, fg_color=bg_color)
+        self.bg_color = bg_color
         self.on_check = on_check
+        self.on_expanded = on_expanded
         self.default_options = default_options
-        self.idta_options = [
-            (KOSMO.id_short_rule.name, "idShort 설정/명명 규칙 검사"),
-            (KOSMO.id_rule.name, "IRDI/IRI 형식 검사"),
-            (KOSMO.submodel_rule.name, "Submodel 구성 검사"),
-            (KOSMO.concept_description_rule.name, "Concept Description 규칙 검사"),
-            (KOSMO.kind_rule.name, "Kind 유형 검사"),
-            (KOSMO.thumbnail_rule.name, "Thumbnail 이미지 확인"),
-            (KOSMO.value_rule.name, "Value 값 존재 여부 확인"),
-            (
-                KOSMO.submodel_element_collection_rule,
-                "Concept Description Mapping 확인",
-            ),
+        self.expanded_states: Dict[str, bool] = {
+            k: v
+            for k, v in expanded_states.items()
+            if k
+            in {"kosmo_aas", "kosmo_submodel", "kosmo_smc", "kosmo_prop", "kosmo_cd"}
+        }
+        self.kosmo_aas_options = [
+            {
+                "key": KOSMO.aas_thumbnail.name,
+                "label": "Thumbnail 이미지 확인",
+                "description": "파일이 Thumbnail 이미지를 포함하는지 확인합니다",
+            },
+            {
+                "key": KOSMO.aas_id_short.name,
+                "label": "idShort 설정/명명 규칙 검사",
+                "description": "idShort가 대문자로 시작하는지 검사합니다",
+            },
+            {
+                "key": KOSMO.aas_id.name,
+                "label": "Id 형식 검사",
+                "description": "Id가 IRI 형식을 준수하는지 검사합니다",
+            },
+            {
+                "key": KOSMO.aas_submodel.name,
+                "label": "Submodel 구성 검사",
+                "description": "필수 Submodel 4종을 포함하는지 검사합니다",
+            },
+            {
+                "key": KOSMO.aas_global_asset_id.name,
+                "label": "globalAssetId 설정 검사",
+                "description": "globalAssetId 설정 여부를 검사합니다",
+            },
+            {
+                "key": KOSMO.aas_type.name,
+                "label": "Type 유형 검사",
+                "description": "kind가 Type으로 지정되었는지 확인합니다",
+            },
         ]
-        self._sub_description = [
-            (KOSMO.id_short_rule.name, "idShort가 대문자로 시작하는지 검사합니다"),
-            (KOSMO.id_rule.name, "Id가 IRDI/IRI 형식을 준수하는지 검사합니다"),
-            (KOSMO.submodel_rule.name, "필수 Submodel 4종을 포함하는지 검사합니다"),
-            (
-                KOSMO.concept_description_rule.name,
-                "Concept Description 관련 규칙을 검사합니다",
-            ),
-            (KOSMO.kind_rule.name, "Kind 유형이 올바르게 설정되었는지 검사합니다"),
-            (KOSMO.thumbnail_rule.name, "Thumbnail 이미지가 존재하는지 검사합니다"),
-            (KOSMO.value_rule.name, "Property의 Value가 빈 값인지 확인합니다"),
-            (
-                KOSMO.submodel_element_collection_rule,
-                "SubmodelElementCollection과 ConceptDescription의 매핑 여부를 확인합니다",
-            ),
+        self.kosmo_submodel_options = [
+            {
+                "key": KOSMO.submodel_id_short.name,
+                "label": "idShort 설정/명명 규칙 검사",
+                "description": "idShort가 대문자로 시작하는지 검사합니다",
+            },
+            {
+                "key": KOSMO.submodel_id.name,
+                "label": "Id 형식 검사",
+                "description": "Id가 IRI 형식을 준수하는지 검사합니다",
+            },
+            {
+                "key": KOSMO.submodel_semantic_id.name,
+                "label": "semanticId 설정/명명 규칙 검사",
+                "description": "semanticId가 IRI 형식을 준수하는지 검사합니다",
+            },
+            {
+                "key": KOSMO.submodel_kind.name,
+                "label": "Kind 유형 검사",
+                "description": "kind 유형이 올바르게 설정되었는지 검사합니다",
+            },
         ]
-        self.copy_chosen_options: Dict[str, ctk.BooleanVar] = {
+        self.kosmo_smc_options = [
+            {
+                "key": KOSMO.smc_id_short.name,
+                "label": "idShort 설정/명명 규칙 검사",
+                "description": "idShort가 대문자로 시작하는지 검사합니다",
+            },
+            {
+                "key": KOSMO.smc_cd_mapping.name,
+                "label": "Concept Description Mapping 확인",
+                "description": "ConceptDescription의 매핑 여부를 확인합니다",
+            },
+        ]
+        self.kosmo_property_options = [
+            {
+                "key": KOSMO.prop_value.name,
+                "label": "Value 값 존재 여부 확인",
+                "description": "Property의 Value가 빈 값인지 확인합니다",
+            },
+            {
+                "key": KOSMO.prop_id_short.name,
+                "label": "idShort 설정/명명 규칙 검사",
+                "description": "idShort가 대문자로 시작하는지 검사합니다",
+            },
+            {
+                "key": KOSMO.prop_cd_mapping.name,
+                "label": "Concept Description Mapping 확인",
+                "description": "ConceptDescription의 매핑 여부를 확인합니다",
+            },
+        ]
+        self.kosmo_cd_options = [
+            {
+                "key": KOSMO.cd_id_short.name,
+                "label": "idShort 설정/명명 규칙 검사",
+                "description": "idShort가 대문자로 시작하는지 검사합니다",
+            },
+            {
+                "key": KOSMO.cd_id.name,
+                "label": "Id 형식 검사",
+                "description": "Id가 IRI 형식을 준수하는지 검사합니다",
+            },
+            {
+                "key": KOSMO.cd_definition.name,
+                "label": "definition 설정 검사",
+                "description": "definition/description 설정 여부를 검사합니다",
+            },
+        ]
+
+        aas_choices = {
             key: ctk.BooleanVar(self, value=value)
             for key, value in chosen_options.items()
-            if key in {k for k, _ in self.idta_options}
+            if key in {m.get("key") for m in self.kosmo_aas_options}
         }
 
+        submodel_choices = {
+            key: ctk.BooleanVar(self, value=value)
+            for key, value in chosen_options.items()
+            if key in {m.get("key") for m in self.kosmo_submodel_options}
+        }
+
+        smc_choices = {
+            key: ctk.BooleanVar(self, value=value)
+            for key, value in chosen_options.items()
+            if key in {m.get("key") for m in self.kosmo_smc_options}
+        }
+        property_choices = {
+            key: ctk.BooleanVar(self, value=value)
+            for key, value in chosen_options.items()
+            if key in {m.get("key") for m in self.kosmo_property_options}
+        }
+
+        cd_choices = {
+            key: ctk.BooleanVar(self, value=value)
+            for key, value in chosen_options.items()
+            if key in {m.get("key") for m in self.kosmo_cd_options}
+        }
+
+        self.copy_chosen_options: Dict[str, bool] = {}
+        self.copy_chosen_options.update(aas_choices)
+        self.copy_chosen_options.update(submodel_choices)
+        self.copy_chosen_options.update(smc_choices)
+        self.copy_chosen_options.update(property_choices)
+        self.copy_chosen_options.update(cd_choices)
+
         self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=0)
 
-        desc_row = 0
-        for i, (key, label) in enumerate(self.idta_options):
-            check_row = i
-            if i > 0:
-                check_row = desc_row + 1
-            check_box = ctk.CTkCheckBox(
-                self,
-                text=label,
-                variable=self.copy_chosen_options[key],
-                command=self._callback,
-                font=ctk.CTkFont(size=16),
-                width=16,
-                height=16,
-            )
-            check_box.grid(row=check_row, column=0, sticky=ctk.W, padx=12, pady=(4, 0))
+        self.kosmo_aas = TreeCheckboxFrame(
+            self,
+            title="AAS 검증",
+            chosen_options=aas_choices,
+            items=self.kosmo_aas_options,
+            on_check=self.check,
+            on_expanded=lambda expanded: self.expand("kosmo_aas", expanded),
+            default_options=default_options,
+            is_expanded=self.expanded_states.get("kosmo_aas", True),
+        )
+        self.kosmo_aas.grid(row=0, column=0, sticky=ctk.NSEW, pady=(8, 0))
 
-            description = ctk.CTkLabel(
-                self,
-                text=self._sub_description[i][-1],
-                font=ctk.CTkFont(size=14),
-                text_color="#9C9C9C",
-            )
-            desc_row = check_row + 1
-            description.grid(
-                row=desc_row, column=0, sticky=ctk.W, ipadx=40, pady=(0, 4)
-            )
+        self.kosmo_submodel = TreeCheckboxFrame(
+            self,
+            title="Submodel 검증",
+            chosen_options=submodel_choices,
+            items=self.kosmo_submodel_options,
+            on_check=self.check,
+            on_expanded=lambda expanded: self.expand("kosmo_submodel", expanded),
+            default_options=default_options,
+            is_expanded=self.expanded_states.get("kosmo_submodel", False),
+        )
+        self.kosmo_submodel.grid(row=1, column=0, sticky=ctk.NSEW, pady=(8, 0))
+
+        self.kosmo_smc = TreeCheckboxFrame(
+            self,
+            title="SMC 검증",
+            chosen_options=smc_choices,
+            items=self.kosmo_smc_options,
+            on_check=self.check,
+            on_expanded=lambda expanded: self.expand("kosmo_smc", expanded),
+            default_options=default_options,
+            is_expanded=self.expanded_states.get("kosmo_smc", False),
+        )
+
+        self.kosmo_smc.grid(row=2, column=0, sticky=ctk.NSEW, pady=(8, 0))
+
+        self.kosmo_prop = TreeCheckboxFrame(
+            self,
+            title="Property 검증",
+            chosen_options=property_choices,
+            items=self.kosmo_property_options,
+            on_check=self.check,
+            on_expanded=lambda expanded: self.expand("kosmo_prop", expanded),
+            default_options=default_options,
+            is_expanded=self.expanded_states.get("kosmo_prop", False),
+        )
+
+        self.kosmo_prop.grid(row=3, column=0, sticky=ctk.NSEW, pady=(8, 0))
+
+        self.kosmo_cd = TreeCheckboxFrame(
+            self,
+            title="Concept Description 검증",
+            chosen_options=cd_choices,
+            items=self.kosmo_cd_options,
+            on_check=self.check,
+            on_expanded=lambda expanded: self.expand("kosmo_cd", expanded),
+            default_options=default_options,
+            is_expanded=self.expanded_states.get("kosmo_cd", False),
+        )
+
+        self.kosmo_cd.grid(row=4, column=0, sticky=ctk.NSEW, pady=(8, 0))
+
+    def check(self, options: Dict[str, bool]):
+        # TODO
+        self.on_check(options)
 
     def init_checkboxes(self):
-        for key, var in self.copy_chosen_options.items():
-            var.set(self.default_options[key])
-        self._callback()
+        self.kosmo_aas.init()
+        self.kosmo_submodel.init()
+        self.kosmo_smc.init()
+        self.kosmo_prop.init()
+        self.kosmo_cd.init()
 
-    def _callback(self):
-        result = {k: v.get() for k, v in self.copy_chosen_options.items()}
-        self.on_check(result)
+    def expanded_with_height(self) -> List[Tuple[bool, int, int]]:
+        return [
+            (self.kosmo_aas.expanded, 27, 255),
+            (self.kosmo_submodel.expanded, 27, 255),
+            (self.kosmo_smc.expanded, 27, 255),
+            (self.kosmo_prop.expanded, 27, 255),
+            (self.kosmo_cd.expanded, 27, 255),
+        ]
+
+    def expand(self, option_name: str, expanded: bool):
+        self.expanded_states[option_name] = expanded
+        self.on_expanded((option_name, expanded))
