@@ -134,7 +134,7 @@ class IdtaOptions(ctk.CTkFrame):
             {
                 "key": IDTA.standard.name,
                 "label": "표준 검사",
-                "description": "IDTA 표준에 따른 참조모델의 제약조건을 검사합니다",
+                "description": "IDTA 표준에 따른 참조모델의 유효성을 검사합니다",
             },
             {
                 "key": IDTA.optional.name,
@@ -156,13 +156,32 @@ class IdtaOptions(ctk.CTkFrame):
                 "label": "AASd-006 제약조건 검사",
             },
             {
+                "key": IDTA.aasd_007.name,
+                "label": "AASd-007 제약조건 검사",
+            },
+            # {
+            #     "key": IDTA.aasd_012.name,
+            #     "label": "AASd-012 제약조건 검사",
+            # },
+            {
                 "key": IDTA.aasd_014.name,
                 "label": "AASd-014 제약조건 검사",
             },
             {
-                "key": IDTA.aasd_022.name,
-                "label": "AASd-022 제약조건 검사",
+                "key": IDTA.aasd_020.name,
+                "label": "AASd-020 제약조건 검사",
             },
+            # {
+            #     "key": IDTA.aasd_021.name,
+            #     "label": "AASd-021 제약조건 검사",
+            # },
+            # {
+            #     "key": IDTA.aasd_022.name,
+            #     "label": "AASd-022 제약조건 검사",
+            # },
+            #     "key": IDTA.aasd_077.name,
+            #     "label": "AASd-077 제약조건 검사",
+            # },
             {
                 "key": IDTA.aasd_090.name,
                 "label": "AASd-090 제약조건 검사",
@@ -171,6 +190,9 @@ class IdtaOptions(ctk.CTkFrame):
                 "key": IDTA.aasd_107.name,
                 "label": "AASd-107 제약조건 검사",
             },
+            #     "key": IDTA.aasd_108.name,
+            #     "label": "AASd-108 제약조건 검사",
+            # },
             {
                 "key": IDTA.aasd_109.name,
                 "label": "AASd-109 제약조건 검사",
@@ -179,6 +201,9 @@ class IdtaOptions(ctk.CTkFrame):
                 "key": IDTA.aasd_114.name,
                 "label": "AASd-114 제약조건 검사",
             },
+            #     "key": IDTA.aasd_115.name,
+            #     "label": "AASd-115 제약조건 검사",
+            # },
             {
                 "key": IDTA.aasd_116.name,
                 "label": "AASd-116 제약조건 검사",
@@ -228,6 +253,10 @@ class IdtaOptions(ctk.CTkFrame):
                 "label": "AASd-127 제약조건 검사",
             },
             {
+                "key": IDTA.aasd_128.name,
+                "label": "AASd-128 제약조건 검사",
+            },
+            {
                 "key": IDTA.aasd_129.name,
                 "label": "AASd-129 제약조건 검사",
             },
@@ -253,6 +282,9 @@ class IdtaOptions(ctk.CTkFrame):
                 "key": IDTA.aasc_3a_002.name,
                 "label": "AASc-3a-002 제약조건 검사",
             },
+            #     "key": IDTA.aasc_3a_003.name,
+            #     "label": "AASc-3a-003 제약조건 검사",
+            # },
             {
                 "key": IDTA.aasc_3a_004.name,
                 "label": "AASc-3a-004 제약조건 검사",
@@ -278,9 +310,12 @@ class IdtaOptions(ctk.CTkFrame):
                 "label": "AASc-3a-009 제약조건 검사",
             },
             {
-                "key": IDTA.aasc_3c_010.name,
+                "key": IDTA.aasc_3a_010.name,
                 "label": "AASc-3c-010 제약조건 검사",
             },
+            #     "key": IDTA.aasc_3a_050.name,
+            #     "label": "AASc-3a-050 제약조건 검사",
+            # },
         ]
 
         idta_choices = {
@@ -298,6 +333,11 @@ class IdtaOptions(ctk.CTkFrame):
             for key, value in chosen_options.items()
             if key in {m.get("key") for m in self.part3a_constraints}
         }
+
+        self.copy_chosen_options: Dict[str, bool] = {}
+        self.copy_chosen_options.update(idta_choices)
+        self.copy_chosen_options.update(aasd_choices)
+        self.copy_chosen_options.update(aasc_3a_choices)
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=0)
@@ -340,7 +380,6 @@ class IdtaOptions(ctk.CTkFrame):
         self.aasc_3a.grid(row=2, column=0, sticky=ctk.NSEW, pady=(0, 8))
 
     def check(self, options: Dict[str, bool]):
-        # TODO
         self.on_check(options)
 
     def init_checkboxes(self):
@@ -586,7 +625,6 @@ class KosmoOptions(ctk.CTkFrame):
         self.kosmo_cd.grid(row=4, column=0, sticky=ctk.NSEW, pady=(8, 0))
 
     def check(self, options: Dict[str, bool]):
-        # TODO
         self.on_check(options)
 
     def init_checkboxes(self):

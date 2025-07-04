@@ -12,9 +12,9 @@ class IDTA(Enum):
     aasd_007 = auto()
     # aasd_012 = auto()
     aasd_014 = auto()
-    # aasd_020 = auto()
+    aasd_020 = auto()
     # aasd_021 = auto()
-    aasd_022 = auto()
+    # aasd_022 = auto()
     # aasd_077 = auto()
     aasd_090 = auto()
     aasd_107 = auto()
@@ -34,6 +34,7 @@ class IDTA(Enum):
     aasd_125 = auto()
     aasd_126 = auto()
     aasd_127 = auto()
+    aasd_128 = auto()
     aasd_129 = auto()
     aasd_130 = auto()
     aasd_131 = auto()
@@ -47,8 +48,12 @@ class IDTA(Enum):
     aasc_3a_007 = auto()
     aasc_3a_008 = auto()
     aasc_3a_009 = auto()
-    aasc_3c_010 = auto()
+    aasc_3a_010 = auto()
     # aasc_3c_050 = auto()
+
+    @classmethod
+    def from_string(cls, value: str) -> "IDTA | None":
+        return cls.__members__.get(value)
 
 
 class KOSMO(Enum):
@@ -73,8 +78,54 @@ class KOSMO(Enum):
 
 
 CHECKLIST = {
-    IDTA.standard: "IDTA # 1. 표준 검사",
-    IDTA.optional: "IDTA # 2. 느슨한 표준 검사",
+    IDTA.standard.name: "IDTA # 1. 표준 검사",
+    IDTA.optional.name: "IDTA # 2. 느슨한 표준 검사",
+    IDTA.all_aasd.name: "IDTA # 3. Part 1. 제약조건 전체 검사",
+    IDTA.aasd_002.name: "IDTA # 3-1. 제약조건 AASd-002 검사",
+    IDTA.aasd_005.name: "IDTA # 3-2. 제약조건 AASd-005 검사",
+    IDTA.aasd_006.name: "IDTA # 3-3. 제약조건 AASd-006 검사",
+    IDTA.aasd_007.name: "IDTA # 3-4. 제약조건 AASd-007 검사",
+    # IDTA.aasd_012.name: "IDTA # 3-5. 제약조건 AASd-012 검사",
+    IDTA.aasd_014.name: "IDTA # 3-6. 제약조건 AASd-014 검사",
+    IDTA.aasd_020.name: "IDTA # 3-7. 제약조건 AASd-020 검사",
+    # IDTA.aasd_021.name: "IDTA # 3-8. 제약조건 AASd-021 검사",
+    # IDTA.aasd_022.name: "IDTA # 3-9. 제약조건 AASd-022 검사",
+    # IDTA.aasd_077.name: "IDTA # 3-10. 제약조건 AASd-077 검사",
+    IDTA.aasd_090.name: "IDTA # 3-11. 제약조건 AASd-090 검사",
+    IDTA.aasd_107.name: "IDTA # 3-12. 제약조건 AASd-107 검사",
+    # IDTA.aasd_108.name: "IDTA # 3-13. 제약조건 AASd-108 검사",
+    IDTA.aasd_109.name: "IDTA # 3-14. 제약조건 AASd-109 검사",
+    IDTA.aasd_114.name: "IDTA # 3-15. 제약조건 AASd-114 검사",
+    # IDTA.aasd_115.name: "IDTA # 3-16. 제약조건 AASd-115 검사",
+    IDTA.aasd_116.name: "IDTA # 3-17. 제약조건 AASd-116 검사",
+    IDTA.aasd_117.name: "IDTA # 3-18. 제약조건 AASd-117 검사",
+    IDTA.aasd_118.name: "IDTA # 3-19. 제약조건 AASd-118 검사",
+    IDTA.aasd_119.name: "IDTA # 3-20. 제약조건 AASd-119 검사",
+    IDTA.aasd_120.name: "IDTA # 3-21. 제약조건 AASd-120 검사",
+    IDTA.aasd_121.name: "IDTA # 3-22. 제약조건 AASd-121 검사",
+    IDTA.aasd_122.name: "IDTA # 3-23. 제약조건 AASd-122 검사",
+    IDTA.aasd_123.name: "IDTA # 3-24. 제약조건 AASd-123 검사",
+    IDTA.aasd_124.name: "IDTA # 3-25. 제약조건 AASd-124 검사",
+    IDTA.aasd_125.name: "IDTA # 3-26. 제약조건 AASd-125 검사",
+    IDTA.aasd_126.name: "IDTA # 3-27. 제약조건 AASd-126 검사",
+    IDTA.aasd_127.name: "IDTA # 3-28. 제약조건 AASd-127 검사",
+    IDTA.aasd_128.name: "IDTA # 3-29. 제약조건 AASd-128 검사",
+    IDTA.aasd_129.name: "IDTA # 3-30. 제약조건 AASd-129 검사",
+    IDTA.aasd_130.name: "IDTA # 3-31. 제약조건 AASd-130 검사",
+    IDTA.aasd_131.name: "IDTA # 3-32. 제약조건 AASd-131 검사",
+    IDTA.aasd_133.name: "IDTA # 3-33. 제약조건 AASd-133 검사",
+    IDTA.aasd_134.name: "IDTA # 3-34. 제약조건 AASd-134 검사",
+    IDTA.all_aasc_3a.name: "IDTA # 4. Part 3. 제약조건 전체 검사",
+    IDTA.aasc_3a_002.name: "IDTA # 4-1. 제약조건 AASc-3a-002 검사",
+    # IDTA.aasc_3a_003.name: "IDTA # 4-2. 제약조건 AASc-3a-003 검사",
+    IDTA.aasc_3a_004.name: "IDTA # 4-3. 제약조건 AASc-3a-004 검사",
+    IDTA.aasc_3a_005.name: "IDTA # 4-4. 제약조건 AASc-3a-005 검사",
+    IDTA.aasc_3a_006.name: "IDTA # 4-5. 제약조건 AASc-3a-006 검사",
+    IDTA.aasc_3a_007.name: "IDTA # 4-6. 제약조건 AASc-3a-007 검사",
+    IDTA.aasc_3a_008.name: "IDTA # 4-7. 제약조건 AASc-3a-008 검사",
+    IDTA.aasc_3a_009.name: "IDTA # 4-8. 제약조건 AASc-3a-009 검사",
+    IDTA.aasc_3a_010.name: "IDTA # 4-9. 제약조건 AASc-3a-010 검사",
+    # IDTA.aasc_3c_050.name: "IDTA # 4-10. 제약조건 AASc-3c-050 검사",
     KOSMO.aas_thumbnail.name: "KOSMO-AAS # 1. Thumbnail 이미지 확인",
     KOSMO.aas_id_short.name: "KOSMO-AAS # 2. idShort 설정/명명 규칙 검사",
     KOSMO.aas_id.name: "KOSMO-AAS # 3. Id 형식 검사",

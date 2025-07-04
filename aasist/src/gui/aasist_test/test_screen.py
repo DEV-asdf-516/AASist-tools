@@ -15,7 +15,7 @@ from aasist.src.gui.common.file_selector import FileSelector
 from aasist.src.gui.common.log_box import LogBox
 from aasist.src.gui.common.tree_checkbox_frame import TreeCheckboxFrame
 from aasist.src.gui.handler import _TEST_LOG_NAME, QueueHandler
-from aasist.src.module.tester.file.test_file_verificator import TestFileVerficator
+from aasist.src.module.tester.file.file_verificator import TestFileVerficator
 from aasist.src.module.tester.constants import IDTA, KOSMO
 
 
@@ -27,12 +27,18 @@ class TestScreen(ctk.CTkFrame):
         IDTA.aasd_005.name: False,
         IDTA.aasd_006.name: False,
         IDTA.aasd_007.name: False,
+        # IDTA.aasd_012.name: False,
         IDTA.aasd_014.name: False,
-        IDTA.aasd_022.name: False,
+        IDTA.aasd_020.name: False,
+        # IDTA.aasd_021.name: False,
+        # IDTA.aasd_022.name: False,
+        # IDTA.aasd_077.name: False,
         IDTA.aasd_090.name: False,
         IDTA.aasd_107.name: False,
+        # IDTA.aasd_108.name: False,
         IDTA.aasd_109.name: False,
         IDTA.aasd_114.name: False,
+        # IDTA.aasd_115.name: False,
         IDTA.aasd_116.name: False,
         IDTA.aasd_117.name: False,
         IDTA.aasd_118.name: False,
@@ -45,19 +51,22 @@ class TestScreen(ctk.CTkFrame):
         IDTA.aasd_125.name: False,
         IDTA.aasd_126.name: False,
         IDTA.aasd_127.name: False,
+        IDTA.aasd_128.name: False,
         IDTA.aasd_129.name: False,
         IDTA.aasd_130.name: False,
         IDTA.aasd_131.name: False,
         IDTA.aasd_133.name: False,
         IDTA.aasd_134.name: False,
         IDTA.aasc_3a_002.name: False,
+        # IDTA.aasc_3a_003.name: False,
         IDTA.aasc_3a_004.name: False,
         IDTA.aasc_3a_005.name: False,
         IDTA.aasc_3a_006.name: False,
         IDTA.aasc_3a_007.name: False,
         IDTA.aasc_3a_008.name: False,
         IDTA.aasc_3a_009.name: False,
-        IDTA.aasc_3c_010.name: False,
+        IDTA.aasc_3a_010.name: False,
+        # IDTA.aasc_3c_050.name: False,
         KOSMO.aas_thumbnail.name: True,
         KOSMO.aas_id_short.name: True,
         KOSMO.aas_id.name: True,
@@ -230,6 +239,12 @@ class TestScreen(ctk.CTkFrame):
                     if key in {k for k in self.kosmo.copy_chosen_options.keys()}
                     and value == True
                 },
+                idta_options={
+                    key: value
+                    for key, value in self.chosen_options.items()
+                    if key in {k for k in self.idta.copy_chosen_options.keys()}
+                    and value == True
+                },
             ),
         )
         self.run_button.grid(row=0, column=0, sticky=ctk.E, pady=8)
@@ -303,20 +318,20 @@ class TestScreen(ctk.CTkFrame):
         self._url = url
 
     def handle_run_test(self, **kwargs: Any):
+        idta_options = kwargs.get("idta_options", {})
         kosmo_options = kwargs.get("kosmo_options", {})
         files: Optional[List[str]] = kwargs.get("files", [])
         api: Optional[str] = kwargs.get("api", "")
 
-        kosmo_options[IDTA.all_aasd.name] = self.idta.aasd.is_all.get()
-        kosmo_options[IDTA.all_aasc_3a.name] = self.idta.aasc_3a.is_all.get()
+        idta_options[IDTA.all_aasd.name] = self.idta.aasd.is_all.get()
+        idta_options[IDTA.all_aasc_3a.name] = self.idta.aasc_3a.is_all.get()
 
         for file in files:
             test = TestFileVerficator(
                 file=file,
-                use_aas_test_engine=self.chosen_options[IDTA.standard.name],
-                ignore_optional_constraints=self.chosen_options[IDTA.optional.name],
                 stop_event=self.run_button.stop_event,
                 kosmo_options=kosmo_options,
+                idta_options=idta_options,
             )
             test.verify()
 

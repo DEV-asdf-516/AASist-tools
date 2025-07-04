@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import Enum
 from queue import Empty
 import re
@@ -7,6 +8,15 @@ from aas_test_engines import file as te
 import asyncio
 from aasist.src.gui.handler import _TEST_LOG_NAME, LogLevel, QueueHandler
 from aasist.src.module.format import AasFileFormat
+from aasist.src.module.tester.extends.context.aasc_3a_validation_context import (
+    Aasc3aValidationContext,
+)
+from aasist.src.module.tester.extends.context.aasd_validation_context import (
+    AasdValidationContext,
+)
+from aasist.src.module.tester.extends.context.extends_validation_context import (
+    ExtendsValidationContext,
+)
 from aasist.src.module.tester.extends.context.kosmo_validation_context import (
     KosmoValidationContext,
 )
@@ -14,6 +24,15 @@ from aasist.src.module.tester.extends.context.lenient_validation_context import 
     LenientValidationContext,
 )
 from aasist.src.module.tester.constants import IDTA, CHECKLIST
+from aasist.src.module.tester.extends.registry.aasc_3a_validation_registry import (
+    Aasc3aValidationRegistry,
+)
+from aasist.src.module.tester.extends.registry.aasd_validation_registry import (
+    AasdValidationRegistry,
+)
+from aasist.src.module.tester.extends.registry.validation_registry import (
+    ValidationRegistry,
+)
 from aasist.src.module.tester.extends.test_result_wrapper import (
     AasTestResultWrapper,
     wrap_test_result,
@@ -27,12 +46,9 @@ class TestFileVerficator:
 
     def __init__(self, file: str, **kwargs):
         self._file = file
-        self.use_aas_test_engine: bool = kwargs.get("use_aas_test_engine")
-        self.ignore_opional_constraints: bool = kwargs.get(
-            "ignore_optional_constraints"
-        )
+        self.idta_options: Dict[str, bool] = kwargs.get("idta_options", {})
         self.kosmo_options: Dict[str, bool] = kwargs.get("kosmo_options", {})
-        self.results: Dict[Enum, bool] = {}
+        self.results: Dict[str, bool] = {}
         self.log_handler = QueueHandler(_TEST_LOG_NAME)
         self.stop_event: threading.Event = kwargs.get("stop_event", None)
 
@@ -40,34 +56,58 @@ class TestFileVerficator:
         self.log_handler.add("=========== [Test start] ===========")
         self.log_handler.add(f"Testing file: {self._file}")
 
-        if self.use_aas_test_engine:
+        if self.idta_options:
             self.log_handler.add("AAS Checklist options: IDTA", LogLevel.INFO)
-            self.log_handler.add(f"{CHECKLIST[IDTA.standard]}", LogLevel.INFO)
-            self._check_by_test_engine(self._file, IDTA.standard)
 
-        if self.ignore_opional_constraints:
-            self.log_handler.add("AAS Checklist options: IDTA", LogLevel.INFO)
-            with LenientValidationContext() as ctx:  # TODO: AASX 뷰어 조회되면 pass
-                self.log_handler.add(f"{CHECKLIST[IDTA.optional]}", LogLevel.INFO)
-                # self._check_by_test_engine(self._file, IDTA.optional)
+        standard_idta_options = {
+            k: v
+            for k, v in self.idta_options.items()
+            if k in [IDTA.standard.name, IDTA.optional.name]
+        }
 
-        if self.kosmo_options:
-            self.log_handler.add("AAS Checklist options: KOSMO", LogLevel.INFO)
-
-        with KosmoValidationContext() as ctx:
-            registry: KosmoValidationRegistry = KosmoValidationRegistry(context=ctx)
-            self._check_by_kosmo(self._file)
-            for kosmo_option, enabled in self.kosmo_options.items():
+        if standard_idta_options:
+            for idta_option, enabled in standard_idta_options.items():
                 if not enabled:
                     continue
                 if self.stop_event and self.stop_event.is_set():
                     return
-                kosmo_validator = registry.get_validator(kosmo_option)
-                if not kosmo_validator:
-                    continue
-                asyncio.run(kosmo_validator(registry))
+                self.log_handler.add(f"{CHECKLIST[idta_option]}", LogLevel.INFO)
+                if idta_option == IDTA.standard.name:
+                    self._check_with_detail_log(self._file, IDTA.standard)
+                if idta_option == IDTA.optional.name:
+                    with LenientValidationContext() as ctx:  # TODO: AASX 뷰어 조회되면 pass
+                        # self._check_with_detail_log(self._file, IDTA.optional)
+                        pass
 
-            self.results.update(registry.results)
+        aasd_idta_constraints_options = {
+            k: v for k, v in self.idta_options.items() if "aasd" in k
+        }
+
+        if aasd_idta_constraints_options:
+            self._execute_register(
+                options=aasd_idta_constraints_options,
+                context=AasdValidationContext,
+                registry=AasdValidationRegistry,
+            )
+
+        aasc_3a_idta_constraints_options = {
+            k: v for k, v in self.idta_options.items() if "aasc_3a" in k
+        }
+
+        if aasc_3a_idta_constraints_options:
+            self._execute_register(
+                options=aasc_3a_idta_constraints_options,
+                context=Aasc3aValidationContext,
+                registry=Aasc3aValidationRegistry,
+            )
+
+        if self.kosmo_options:
+            self.log_handler.add("AAS Checklist options: KOSMO", LogLevel.INFO)
+            self._execute_register(
+                options=self.kosmo_options,
+                context=KosmoValidationContext,
+                registry=KosmoValidationRegistry,
+            )
 
         self.log_handler.add("=========== [Test result] ===========")
         for checklist, ok in self.results.items():
@@ -82,7 +122,31 @@ class TestFileVerficator:
                     LogLevel.ERROR,
                 )
 
-    def _check_by_test_engine(self, file: str, checklist: Enum):
+    def _execute_register(
+        self,
+        options: Dict[str, bool],
+        context: ExtendsValidationContext,
+        registry: ValidationRegistry,
+    ):
+        if not options:
+            return
+
+        with context() as ctx:
+            registry: ValidationRegistry = registry(context=ctx)
+            self._check(self._file)
+            for option, enabled in options.items():
+                if not enabled:
+                    continue
+                if self.stop_event and self.stop_event.is_set():
+                    return
+                validator = registry.get_validator(option)
+                if not validator:
+                    continue
+                asyncio.run(validator(registry))
+
+            self.results.update(registry.results)
+
+    def _check_with_detail_log(self, file: str, checklist: Enum):
         extension = re.sub(r".*\.", "", file)
         result: AasTestResultWrapper = None
 
@@ -113,11 +177,11 @@ class TestFileVerficator:
                         break
 
             asyncio.run(_input_log())
-            self.results[checklist] = result.ok()
+            self.results[checklist.name] = result.ok()
         except FileNotFoundError:
             self.log_handler.add(f"{file} not found.", LogLevel.ERROR)
 
-    def _check_by_kosmo(self, file: str):
+    def _check(self, file: str):
         extension = re.sub(r".*\.", "", file)
         try:
             with open(file, "rb") as f:

@@ -15,12 +15,6 @@ class _KosmoContextRules(Enum):
     aasd_002 = "Referable.check_constraint_aasd_002"
     aasd_007 = "Property.check_aasd_007"
     aasd_117 = "ensure_have_id_shorts"
-    aasd_119 = "Submodel.check_aasd119"
-    aasd_120 = "SubmodelElementList.check_aasd_120"
-    aasd_129 = "Submodel.check_aasd_129"
-    aasd_131 = "AssetInformation.check_aasd_131"
-    aasc_3a_004 = "ConceptDescription.check_aasc_3a_004"
-    aasc_3a_005 = "ConceptDescription.check_aasc_3a_005"
     aasc_3a_008 = "ConceptDescription.check_aasc_3a_008"
 
 
@@ -44,7 +38,6 @@ class KosmoValidationContext(ExtendsValidationContext):
         self.asset_informations: List[AssetInformation] = []
         self._petch_parse()
         self._petch_kosmo_id_short_rules()
-        self._kosmo_irdi_rule()
         self._patch_kosmo_concept_description_rules()
         return self
 
@@ -158,9 +151,6 @@ class KosmoValidationContext(ExtendsValidationContext):
 
         model_module.ensure_have_id_shorts = kosmo_id_short_exist_rule
         Referable.check_constraint_aasd_002 = kosmo_id_short_naming_rule
-
-    def _kosmo_irdi_rule(self):
-        pass
 
     def _patch_kosmo_concept_description_rules(self):
         from aas_test_engines.test_cases.v3_0.model import (

@@ -1,7 +1,6 @@
-import asyncio
 import re
-from typing import Dict, List, Union
-from aasist.src.gui.handler import _TEST_LOG_NAME, LogLevel, QueueHandler
+from typing import List, Union
+from aasist.src.gui.handler import LogLevel
 from aasist.src.module.tester.extends.context.kosmo_validation_context import (
     KosmoValidationContext,
 )
@@ -13,13 +12,10 @@ from aas_test_engines.reflect import TypeBase
 
 
 class KosmoValidationRegistry(ValidationRegistry):
-    def __init__(
-        self,
-        context: KosmoValidationContext,
-    ):
+    def __init__(self, context: KosmoValidationContext):
+        super().__init__()
         self.context = context
-        self.results: Dict[str, bool] = {}
-        self.log_handler = QueueHandler(_TEST_LOG_NAME)
+        self.results: dict[str, bool] = {}
 
     def get_validator(self, name: str):
         return ValidationRegistry.get_validator(name)
@@ -47,7 +43,6 @@ class KosmoValidationRegistry(ValidationRegistry):
                     f"""The Id "{construct.id}" violates the Kosmo rules: {construct.__class__.__name__}의 ID {id.raw_value}가 IRI 형식을 준수하지 않습니다.\n\r- 형식이 올바른 경우, 잘못된 공백이 포함되어 있을 수도 있습니다.""",
                     LogLevel.ERROR,
                 )
-                await asyncio.sleep(0.1)
                 self.results[rule] = False
 
     @ValidationRegistry.validator(KOSMO.aas_id.name)
@@ -67,8 +62,8 @@ class KosmoValidationRegistry(ValidationRegistry):
     # id short 규칙
     async def _id_short_rule(self, rule: str, constructs: List[TypeBase]):
         self.log_handler.add(f"{CHECKLIST[rule]}", LogLevel.INFO)
-        await self._check_kosmo_rule_with_logging(constructs, "check_aasd_117", rule)
-        await self._check_kosmo_rule_with_logging(
+        await self.check_rule_with_logging(constructs, "check_aasd_117", rule)
+        await self.check_rule_with_logging(
             constructs, "check_constraint_aasd_002", rule
         )
 
@@ -116,13 +111,12 @@ class KosmoValidationRegistry(ValidationRegistry):
                 f"""The Submodel violates the Kosmo rules:\n\r- 필수 서브모델 {', '.join(missing)}이(가) 누락되었습니다.""",
                 LogLevel.ERROR,
             )
-            await asyncio.sleep(0.1)
             self.results[rule] = False
 
     @ValidationRegistry.validator(KOSMO.aas_global_asset_id.name)
     async def _global_asset_id_rule(self, rule: str = KOSMO.aas_global_asset_id.name):
         self.log_handler.add(f"{CHECKLIST[rule]}", LogLevel.INFO)
-        await self._check_kosmo_rule_with_logging(
+        await self.check_rule_with_logging(
             self.context.asset_informations,
             "check_aasd_131",
             rule,
@@ -142,13 +136,19 @@ class KosmoValidationRegistry(ValidationRegistry):
                     f"""The Kind "{info.asset_kind.value}" violates the Kosmo rules: Kind가 Type으로 지정되어야 합니다.""",
                     LogLevel.ERROR,
                 )
-                await asyncio.sleep(0.1)
                 self.results[rule] = False
+
+    @ValidationRegistry.validator(KOSMO.submodel_semantic_id.name)
+    async def _semantic_id_rule(self, rule: str = KOSMO.submodel_semantic_id.name):
+        self.log_handler.add(f"{CHECKLIST[rule]}", LogLevel.INFO)
+        await self.check_rule_with_logging(
+            self.context.referables["Submodel"], "check_aasd_118", rule
+        )
 
     @ValidationRegistry.validator(KOSMO.submodel_kind.name)
     async def _kind_rule(self, rule: str = KOSMO.submodel_kind.name):
         self.log_handler.add(f"{CHECKLIST[rule]}", LogLevel.INFO)
-        await self._check_kosmo_rule_with_logging(
+        await self.check_rule_with_logging(
             self.context.referables["Submodel"], "check_aasd_129", rule
         )
 
@@ -160,25 +160,8 @@ class KosmoValidationRegistry(ValidationRegistry):
     @ValidationRegistry.validator(KOSMO.cd_definition.name)
     async def _definition_rule(self, rule: str = KOSMO.cd_definition.name):
         self.log_handler.add(f"{CHECKLIST[rule]}", LogLevel.INFO)
-        await self._check_kosmo_rule_with_logging(
+        await self.check_rule_with_logging(
             self.context.referables["ConceptDescription"],
             "check_aasc_3a_008",
             rule,
         )
-
-    async def _check_kosmo_rule_with_logging(
-        self, objects: List[TypeBase], method_name: Union[str, List[str]], rule: KOSMO
-    ):
-        self.results[rule] = self.results.get(rule, True)
-        for obj in objects:
-            if hasattr(obj, method_name) is False:
-                continue
-            message = getattr(obj, method_name)()
-            if not message:
-                continue
-            self.log_handler.add(
-                message,
-                log_level=LogLevel.ERROR,
-            )
-            await asyncio.sleep(0.1)
-            self.results[rule] = False
